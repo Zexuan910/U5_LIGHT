@@ -73,6 +73,18 @@ void Error_Handler(void);
 #define TP_RST_GPIO_Port GPIOE
 #define TP_INT_Pin GPIO_PIN_8
 #define TP_INT_GPIO_Port GPIOE
+#define FLASH_CS_Pin GPIO_PIN_2
+#define FLASH_CS_GPIO_Port GPIOA
+#define FLASH_CLK_Pin GPIO_PIN_3
+#define FLASH_CLK_GPIO_Port GPIOA
+#define FLASH_IO0_Pin GPIO_PIN_1
+#define FLASH_IO0_GPIO_Port GPIOB
+#define FLASH_IO1_Pin GPIO_PIN_0
+#define FLASH_IO1_GPIO_Port GPIOB
+#define FLASH_IO2_Pin GPIO_PIN_7
+#define FLASH_IO2_GPIO_Port GPIOA
+#define FLASH_IO3_Pin GPIO_PIN_6
+#define FLASH_IO3_GPIO_Port GPIOA
 
 /* USER CODE BEGIN Private defines */
 

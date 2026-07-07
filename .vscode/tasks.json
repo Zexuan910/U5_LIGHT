@@ -98,6 +98,42 @@
       "problemMatcher": []
     },
     {
+      "label": "Build UI Assets Package",
+      "type": "shell",
+      "command": "C:\\Users\\35156\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\python\\python.exe",
+      "args": [
+        "tools\\build_ui_assets.py"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Flash UI Assets External Flash",
+      "type": "shell",
+      "command": "powershell",
+      "args": [
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "tools\\program_ui_assets_extflash.ps1"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "dependsOrder": "sequence",
+      "dependsOn": [
+        "Build UI Assets Package"
+      ],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true
+      },
+      "problemMatcher": []
+    },
+    {
       "label": "Configure Release",
       "type": "shell",
       "command": "powershell",

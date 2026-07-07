@@ -20,6 +20,7 @@ endif()
 
 # Set the project name
 set(CMAKE_PROJECT_NAME U5_LIGHT)
+option(UI_ASSET_PROGRAMMER "Build temporary firmware that writes UI assets to external Flash" OFF)
 
 # Enable compile command to ease indexing with e.g. clangd
 set(CMAKE_EXPORT_COMPILE_COMMANDS TRUE)
@@ -46,9 +47,14 @@ target_link_directories(${CMAKE_PROJECT_NAME} PRIVATE
 message(STATUS "LCD selftest enabled: User/SelfTest/lcd_selftest.c")
 target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     User/Config/DEV_Config.c
+    User/Flash/ext_flash.c
     User/LCD/LCD_1in69.c
     User/LCD/lcd_port.c
     User/SelfTest/lcd_selftest.c
+    User/Touch/cst816t.c
+    User/UI/ui_asset_package.c
+    User/UI/ui_asset_programmer.c
+    User/UI/ui_assets.c
 )
 
 get_filename_component(ARM_TOOLCHAIN_BIN_DIR "${CMAKE_C_COMPILER}" DIRECTORY)
@@ -80,13 +86,17 @@ endif()
 # Add include paths
 target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
     User/Config
+    User/Flash
     User/LCD
     User/SelfTest
+    User/Touch
+    User/UI
 )
 
 # Add project symbols (macros)
 target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE
     # Add user defined symbols
+    UI_ASSET_PROGRAMMER=$<BOOL:${UI_ASSET_PROGRAMMER}>
 )
 
 # Remove wrong libob.a library dependency when using cpp files

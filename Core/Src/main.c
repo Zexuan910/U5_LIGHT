@@ -21,8 +21,13 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include <stdio.h>
+
 #include "DEV_Config.h"
 #include "LCD_1in69.h"
+#include "cst816t.h"
+#include "ui_asset_programmer.h"
+#include "ui_assets.h"
 
 /* USER CODE END Includes */
 
@@ -45,26 +50,78 @@
 /* Private variables ---------------------------------------------------------*/
 
 SPI_HandleTypeDef hspi1;
+I2C_HandleTypeDef hi2c3;
 
 /* USER CODE BEGIN PV */
-static UBYTE ui_page = 0U;
+typedef enum {
+  UI_PAGE_HOME = 0,
+  UI_PAGE_NAV,
+  UI_PAGE_WALK,
+  UI_PAGE_RUN,
+  UI_PAGE_ROPE,
+  UI_PAGE_LOCK
+} UIPage;
+
+typedef struct {
+  UBYTE pressed;
+  UBYTE has_xy;
+  UWORD x;
+  UWORD y;
+} TouchSample;
+
+typedef struct {
+  uint16_t year;
+  UBYTE month;
+  UBYTE day;
+  UBYTE hour;
+  UBYTE minute;
+  UBYTE second;
+  UBYTE wday;
+} UIClock;
+
+static UIPage ui_page = UI_PAGE_HOME;
+static UBYTE selected_sport = 0U;
 static UBYTE touch_pressed_prev = 0U;
-static uint32_t ui_last_switch_ms = 0U;
+static uint32_t touch_down_ms = 0U;
+static UBYTE touch_down_has_xy = 0U;
+static UWORD touch_down_x = 0U;
+static UWORD touch_down_y = 0U;
+static UIPage touch_down_page = UI_PAGE_HOME;
+static UBYTE touch_last_has_xy = 0U;
+static UWORD touch_last_x = 0U;
+static UWORD touch_last_y = 0U;
+static UBYTE touch_suppress_until_release = 1U;
+static volatile UBYTE touch_irq_pending = 0U;
+static uint32_t last_touch_ms = 0U;
+static uint32_t lock_enter_ms = 0U;
+static uint32_t lock_touch_keepalive_ms = 0U;
+static UIClock ui_clock = {2026U, 7U, 7U, 12U, 30U, 0U, 2U};
+static uint32_t ui_clock_tick_ms = 0U;
+static uint32_t ui_home_clock_key = 0xFFFFFFFFUL;
+static UBYTE screen_locked = 0U;
+static UBYTE exercise_running = 0U;
 
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
+static void MX_I2C3_Init(void);
 #if LCD_USE_HAL_SPI
 static void MX_SPI1_Init(void);
 #endif
 /* USER CODE BEGIN PFP */
 static void LCD_ShowHelloBuaa(void);
-static void UI_ShowCarouselScreen(UBYTE page);
+static void UI_ShowPage(UIPage page);
+static UBYTE UI_PageIsDetail(UIPage page);
+static void UI_ClockInit(uint32_t now_ms);
+static void UI_ClockUpdate(uint32_t now_ms);
+static void UI_UpdateHomeClock(UBYTE force);
+static void UI_HandleTouchPressed(uint32_t now_ms, const TouchSample* sample);
+static void UI_HandleTouchReleased(uint32_t now_ms, uint32_t press_ms);
+static void UI_CheckAutoLock(uint32_t now_ms);
 static void LCD_FillRectByRows(UWORD x0, UWORD y0, UWORD x1, UWORD y1, UWORD color);
-static void TouchPins_Init(void);
-static UBYTE Touch_IsPressed(void);
+static TouchSample Touch_ReadSample(void);
 
 /* USER CODE END PFP */
 
@@ -254,6 +311,46 @@ static void LCD_DrawText(UWORD x, UWORD y, const char* text, UWORD color, UWORD 
   }
 }
 
+static void LCD_DrawCharTransparent(UWORD x, UWORD y, char ch, UWORD color, UWORD scale)
+{
+  const UBYTE* glyph = LCD_GlyphFor(ch);
+  UWORD row;
+  UWORD col;
+
+  for (row = 0U; row < 7U; row++)
+  {
+    for (col = 0U; col < 5U; col++)
+    {
+      if ((glyph[row] & (1U << (4U - col))) != 0U)
+      {
+        UWORD x0 = (UWORD)(x + (col * scale));
+        UWORD y0 = (UWORD)(y + (row * scale));
+
+        LCD_1IN69_FillRect_FastStatic(x0, y0, (UWORD)(x0 + scale - 1U), (UWORD)(y0 + scale - 1U), color);
+      }
+    }
+  }
+}
+
+static void LCD_DrawTextTransparent(UWORD x, UWORD y, const char* text, UWORD color, UWORD scale)
+{
+  UWORD i = 0U;
+
+  while (text[i] != '\0')
+  {
+    LCD_DrawCharTransparent((UWORD)(x + (i * 6U * scale)), y, text[i], color, scale);
+    i++;
+  }
+}
+
+static void LCD_DrawCenteredTextInRectTransparent(UWORD x, UWORD y, UWORD w, const char* text, UWORD color, UWORD scale)
+{
+  UWORD text_width = LCD_TextWidth(text, scale);
+  UWORD tx = (text_width >= w) ? x : (UWORD)(x + ((w - text_width) / 2U));
+
+  LCD_DrawTextTransparent(tx, y, text, color, scale);
+}
+
 static void LCD_DrawCenteredText(const char* text, UWORD y, UWORD color, UWORD bg_color, UWORD scale)
 {
   UWORD text_width;
@@ -343,6 +440,176 @@ static void UI_DrawDots(UBYTE active, UWORD bg_color)
   (void)bg_color;
 }
 
+static UBYTE UI_ClockIsLeapYear(uint16_t year)
+{
+  if ((year % 400U) == 0U)
+  {
+    return 1U;
+  }
+  if ((year % 100U) == 0U)
+  {
+    return 0U;
+  }
+  return ((year % 4U) == 0U) ? 1U : 0U;
+}
+
+static UBYTE UI_ClockDaysInMonth(uint16_t year, UBYTE month)
+{
+  static const UBYTE days[12] = {31U, 28U, 31U, 30U, 31U, 30U, 31U, 31U, 30U, 31U, 30U, 31U};
+
+  if ((month == 2U) && (UI_ClockIsLeapYear(year) != 0U))
+  {
+    return 29U;
+  }
+  if ((month == 0U) || (month > 12U))
+  {
+    return 31U;
+  }
+  return days[month - 1U];
+}
+
+static void UI_ClockAddOneSecond(void)
+{
+  ui_clock.second++;
+  if (ui_clock.second < 60U)
+  {
+    return;
+  }
+
+  ui_clock.second = 0U;
+  ui_clock.minute++;
+  if (ui_clock.minute < 60U)
+  {
+    return;
+  }
+
+  ui_clock.minute = 0U;
+  ui_clock.hour++;
+  if (ui_clock.hour < 24U)
+  {
+    return;
+  }
+
+  ui_clock.hour = 0U;
+  ui_clock.day++;
+  ui_clock.wday = (UBYTE)((ui_clock.wday + 1U) % 7U);
+  if (ui_clock.day <= UI_ClockDaysInMonth(ui_clock.year, ui_clock.month))
+  {
+    return;
+  }
+
+  ui_clock.day = 1U;
+  ui_clock.month++;
+  if (ui_clock.month <= 12U)
+  {
+    return;
+  }
+
+  ui_clock.month = 1U;
+  ui_clock.year++;
+}
+
+static uint32_t UI_ClockMinuteKey(void)
+{
+  return (((uint32_t)ui_clock.year) << 20) |
+         (((uint32_t)ui_clock.month) << 16) |
+         (((uint32_t)ui_clock.day) << 11) |
+         (((uint32_t)ui_clock.hour) << 6) |
+         (uint32_t)ui_clock.minute;
+}
+
+static void UI_ClockInit(uint32_t now_ms)
+{
+  ui_clock_tick_ms = now_ms;
+  ui_home_clock_key = 0xFFFFFFFFUL;
+}
+
+static void UI_ClockUpdate(uint32_t now_ms)
+{
+  while ((now_ms - ui_clock_tick_ms) >= 1000UL)
+  {
+    ui_clock_tick_ms += 1000UL;
+    UI_ClockAddOneSecond();
+  }
+}
+
+static const char* UI_ClockWeekdayText(void)
+{
+  static const char* const names[7] = {
+    "SUNDAY",
+    "MONDAY",
+    "TUESDAY",
+    "WEDNESDAY",
+    "THURSDAY",
+    "FRIDAY",
+    "SATURDAY"
+  };
+
+  return names[ui_clock.wday % 7U];
+}
+
+static void UI_DrawHomeClockFields(void)
+{
+  char time_text[8];
+  char date_text[14];
+  UWORD sky_mid = LCD_RGB565(43U, 144U, 196U);
+  UWORD sky_low = LCD_RGB565(23U, 96U, 145U);
+  UWORD footer = LCD_RGB565(16U, 55U, 84U);
+  UWORD pale_text = LCD_RGB565(220U, 238U, 247U);
+
+  (void)snprintf(time_text, sizeof(time_text), "%02u:%02u",
+                 (unsigned int)ui_clock.hour,
+                 (unsigned int)ui_clock.minute);
+  (void)snprintf(date_text, sizeof(date_text), "%04u %02u %02u",
+                 (unsigned int)ui_clock.year,
+                 (unsigned int)ui_clock.month,
+                 (unsigned int)ui_clock.day);
+
+  LCD_FillBox(24U, 70U, 150U, 40U, sky_mid);
+  LCD_DrawText(28U, 72U, time_text, LCD_COLOR_WHITE, sky_mid, 4U);
+  LCD_FillBox(30U, 176U, 178U, 18U, sky_low);
+  LCD_DrawText(34U, 178U, date_text, pale_text, sky_low, 2U);
+  LCD_FillBox(0U, 222U, 240U, 18U, footer);
+  LCD_DrawCenteredTextInRect(0U, 222U, 240U, UI_ClockWeekdayText(), pale_text, footer, 2U);
+  ui_home_clock_key = UI_ClockMinuteKey();
+}
+
+static void UI_UpdateHomeClock(UBYTE force)
+{
+  if ((ui_page == UI_PAGE_HOME) &&
+      ((force != 0U) || (ui_home_clock_key != UI_ClockMinuteKey())))
+  {
+    UI_DrawHomeClockFields();
+  }
+}
+
+static UWORD UI_CurrentSportAccent(void)
+{
+  if (ui_page == UI_PAGE_WALK)
+  {
+    return LCD_RGB565(63U, 212U, 122U);
+  }
+  if (ui_page == UI_PAGE_RUN)
+  {
+    return LCD_RGB565(255U, 106U, 61U);
+  }
+  return LCD_RGB565(108U, 140U, 255U);
+}
+
+static void UI_DrawSportActionButton(UWORD accent)
+{
+  UWORD bg = LCD_RGB565(5U, 13U, 26U);
+
+  LCD_FillBox(52U, 248U, 136U, 28U, accent);
+  LCD_DrawCenteredTextInRect(52U,
+                             254U,
+                             136U,
+                             (exercise_running != 0U) ? "STOP" : "START",
+                             bg,
+                             accent,
+                             2U);
+}
+
 static void UI_ShowHome(void)
 {
   UWORD sky_top = LCD_RGB565(72U, 171U, 214U);
@@ -353,7 +620,6 @@ static void UI_ShowHome(void)
   UWORD cloud_shadow = LCD_RGB565(176U, 214U, 228U);
   UWORD cloud = LCD_RGB565(231U, 244U, 249U);
   UWORD dark_text = LCD_RGB565(13U, 44U, 65U);
-  UWORD pale_text = LCD_RGB565(220U, 238U, 247U);
 
   LCD_FillBox(0U, 0U, 240U, 64U, sky_top);
   LCD_FillBox(0U, 64U, 240U, 64U, sky_mid);
@@ -370,39 +636,62 @@ static void UI_ShowHome(void)
   LCD_FillBox(168U, 126U, 24U, 22U, cloud);
 
   LCD_DrawText(18U, 18U, "BUAA TEAM", dark_text, sky_top, 2U);
-  LCD_DrawText(28U, 72U, "12:30", LCD_COLOR_WHITE, sky_mid, 4U);
   LCD_FillBox(28U, 128U, 34U, 4U, LCD_COLOR_WHITE);
-  LCD_DrawText(34U, 178U, "2026 07 07", pale_text, sky_low, 2U);
-  LCD_DrawCenteredTextInRect(0U, 222U, 240U, "TUESDAY", pale_text, footer, 2U);
+  UI_UpdateHomeClock(1U);
   UI_DrawDots(0U, footer);
 }
 
-static void UI_ShowSportMenu(void)
+static void UI_ShowSportMenu(UBYTE selected)
 {
   UWORD bg = LCD_RGB565(8U, 18U, 28U);
   UWORD accent = LCD_RGB565(63U, 212U, 122U);
-  UWORD title = LCD_RGB565(245U, 248U, 255U);
-  UWORD hint = LCD_RGB565(151U, 169U, 190U);
+  UWORD title = LCD_COLOR_BLACK;
+  UWORD hint = LCD_RGB565(28U, 38U, 48U);
+  UWORD card_title = LCD_RGB565(245U, 248U, 255U);
   UWORD card0 = LCD_RGB565(24U, 78U, 66U);
   UWORD card1 = LCD_RGB565(106U, 51U, 38U);
   UWORD card2 = LCD_RGB565(48U, 58U, 125U);
   UWORD card_text = LCD_RGB565(190U, 206U, 222U);
 
-  LCD_FillScreenByRows(bg);
+  if (UIAssets_DrawBackground(UI_ASSET_WATCH_BG) == 0U)
+  {
+    LCD_FillScreenByRows(bg);
+  }
   LCD_FillBox(0U, 0U, 240U, 5U, accent);
-  LCD_DrawText(18U, 18U, "SPORT", title, bg, 2U);
-  LCD_DrawText(18U, 44U, "TAP MODE", hint, bg, 1U);
+  LCD_DrawTextTransparent(18U, 18U, "SPORT", title, 2U);
+  LCD_DrawTextTransparent(18U, 44U, "TAP MODE", hint, 1U);
 
   LCD_FillBox(18U, 70U, 204U, 44U, card0);
-  LCD_DrawText(30U, 78U, "WALK", title, card0, 2U);
+  if (selected == 0U)
+  {
+    LCD_FillBox(18U, 70U, 204U, 3U, LCD_COLOR_WHITE);
+    LCD_FillBox(18U, 111U, 204U, 3U, LCD_COLOR_WHITE);
+    LCD_FillBox(18U, 70U, 3U, 44U, LCD_COLOR_WHITE);
+    LCD_FillBox(219U, 70U, 3U, 44U, LCD_COLOR_WHITE);
+  }
+  LCD_DrawText(30U, 78U, "WALK", card_title, card0, 2U);
   LCD_DrawText(142U, 88U, "START", card_text, card0, 1U);
 
   LCD_FillBox(18U, 128U, 204U, 44U, card1);
-  LCD_DrawText(30U, 136U, "RUN", title, card1, 2U);
+  if (selected == 1U)
+  {
+    LCD_FillBox(18U, 128U, 204U, 3U, LCD_COLOR_WHITE);
+    LCD_FillBox(18U, 169U, 204U, 3U, LCD_COLOR_WHITE);
+    LCD_FillBox(18U, 128U, 3U, 44U, LCD_COLOR_WHITE);
+    LCD_FillBox(219U, 128U, 3U, 44U, LCD_COLOR_WHITE);
+  }
+  LCD_DrawText(30U, 136U, "RUN", card_title, card1, 2U);
   LCD_DrawText(142U, 146U, "START", card_text, card1, 1U);
 
   LCD_FillBox(18U, 186U, 204U, 44U, card2);
-  LCD_DrawText(30U, 194U, "ROPE", title, card2, 2U);
+  if (selected == 2U)
+  {
+    LCD_FillBox(18U, 186U, 204U, 3U, LCD_COLOR_WHITE);
+    LCD_FillBox(18U, 227U, 204U, 3U, LCD_COLOR_WHITE);
+    LCD_FillBox(18U, 186U, 3U, 44U, LCD_COLOR_WHITE);
+    LCD_FillBox(219U, 186U, 3U, 44U, LCD_COLOR_WHITE);
+  }
+  LCD_DrawText(30U, 194U, "ROPE", card_title, card2, 2U);
   LCD_DrawText(142U, 204U, "START", card_text, card2, 1U);
 
   UI_DrawDots(1U, bg);
@@ -414,9 +703,9 @@ static void UI_DrawSportDetail(const char* title_text, UWORD accent, const char*
                                UBYTE dot)
 {
   UWORD bg = LCD_RGB565(5U, 13U, 26U);
-  UWORD title = LCD_RGB565(245U, 248U, 255U);
-  UWORD muted = LCD_RGB565(144U, 160U, 180U);
-  UWORD heart = LCD_RGB565(255U, 112U, 112U);
+  UWORD title = LCD_COLOR_BLACK;
+  UWORD muted = LCD_RGB565(40U, 50U, 62U);
+  UWORD heart = LCD_RGB565(130U, 18U, 18U);
   UWORD stat_text = LCD_RGB565(238U, 244U, 255U);
   UWORD stat_label = LCD_RGB565(142U, 158U, 178U);
   UWORD box0 = LCD_RGB565(18U, 44U, 82U);
@@ -425,12 +714,15 @@ static void UI_DrawSportDetail(const char* title_text, UWORD accent, const char*
   UWORD box3 = LCD_RGB565(128U, 72U, 29U);
   UWORD box4 = LCD_RGB565(70U, 70U, 143U);
 
-  LCD_FillScreenByRows(bg);
+  if (UIAssets_DrawBackground(UI_ASSET_SPORT_BG) == 0U)
+  {
+    LCD_FillScreenByRows(bg);
+  }
   LCD_FillBox(0U, 0U, 240U, 5U, accent);
-  LCD_DrawText(12U, 14U, title_text, title, bg, 2U);
-  LCD_DrawText(157U, 18U, "HR 146", heart, bg, 1U);
-  LCD_DrawCenteredTextInRect(0U, 48U, 240U, main_value, LCD_COLOR_WHITE, bg, 3U);
-  LCD_DrawCenteredTextInRect(0U, 84U, 240U, main_label, muted, bg, 1U);
+  LCD_DrawTextTransparent(12U, 14U, title_text, title, 2U);
+  LCD_DrawTextTransparent(157U, 18U, "HR 146", heart, 1U);
+  LCD_DrawCenteredTextInRectTransparent(0U, 48U, 240U, main_value, LCD_COLOR_BLACK, 3U);
+  LCD_DrawCenteredTextInRectTransparent(0U, 84U, 240U, main_label, muted, 1U);
 
   LCD_FillBox(12U, 110U, 104U, 58U, box0);
   LCD_DrawText(20U, 119U, v0, stat_text, box0, 2U);
@@ -452,46 +744,379 @@ static void UI_DrawSportDetail(const char* title_text, UWORD accent, const char*
   LCD_DrawText(166U, 195U, v4, stat_text, box4, 1U);
   LCD_DrawText(166U, 225U, l4, stat_label, box4, 1U);
 
-  LCD_FillBox(52U, 248U, 136U, 28U, accent);
-  LCD_DrawCenteredTextInRect(52U, 254U, 136U, "START", bg, accent, 2U);
+  UI_DrawSportActionButton(accent);
   UI_DrawDots(dot, bg);
 }
 
-static void UI_ShowCarouselScreen(UBYTE page)
+static void UI_ShowLock(void)
 {
-  switch (page % 4U)
+  LCD_FillScreenByRows(LCD_COLOR_BLACK);
+}
+
+static void UI_ShowPage(UIPage page)
+{
+  switch (page)
   {
-  case 0U:
+  case UI_PAGE_HOME:
     UI_ShowHome();
     break;
-  case 1U:
-    UI_ShowSportMenu();
+  case UI_PAGE_NAV:
+    UI_ShowSportMenu(selected_sport);
     break;
-  case 2U:
+  case UI_PAGE_WALK:
+    UI_DrawSportDetail("WALK", LCD_RGB565(63U, 212U, 122U), "0.00", "KM",
+                       "00:00", "98%", "0.0", "0.0", "0",
+                       "TIME", "SPO2", "NOW", "AVG", "STEP", 2U);
+    break;
+  case UI_PAGE_RUN:
     UI_DrawSportDetail("RUN", LCD_RGB565(255U, 106U, 61U), "4.32", "KM",
                        "00:26", "97%", "3.6", "2.9", "84",
                        "TIME", "SPO2", "NOW", "AVG", "CAD", 2U);
     break;
-  case 3U:
+  case UI_PAGE_ROPE:
+    UI_DrawSportDetail("ROPE", LCD_RGB565(108U, 140U, 255U), "860", "COUNT",
+                       "00:12", "98%", "72", "68", "95",
+                       "TIME", "SPO2", "NOW", "AVG", "KCAL", 3U);
+    break;
+  case UI_PAGE_LOCK:
   default:
-    UI_DrawSportDetail("ROPE", LCD_RGB565(108U, 140U, 255U), "128", "TIMES",
-                       "01:06", "91%", "42", "6.4", "128",
-                       "TIME", "SPO2", "PACE", "CAL", "CNT", 3U);
+    UI_ShowLock();
     break;
   }
 }
 
-static void TouchPins_Init(void)
+static UIPage UI_SelectedSportPage(void)
 {
-  HAL_GPIO_WritePin(TP_RST_GPIO_Port, TP_RST_Pin, GPIO_PIN_RESET);
-  HAL_Delay(10U);
-  HAL_GPIO_WritePin(TP_RST_GPIO_Port, TP_RST_Pin, GPIO_PIN_SET);
-  HAL_Delay(80U);
+  if (selected_sport == 0U)
+  {
+    return UI_PAGE_WALK;
+  }
+  if (selected_sport == 1U)
+  {
+    return UI_PAGE_RUN;
+  }
+  return UI_PAGE_ROPE;
 }
 
-static UBYTE Touch_IsPressed(void)
+static void UI_GotoPage(UIPage page)
 {
-  return (HAL_GPIO_ReadPin(TP_INT_GPIO_Port, TP_INT_Pin) == GPIO_PIN_RESET) ? 1U : 0U;
+  if (page == UI_PAGE_WALK)
+  {
+    selected_sport = 0U;
+  }
+  else if (page == UI_PAGE_RUN)
+  {
+    selected_sport = 1U;
+  }
+  else if (page == UI_PAGE_ROPE)
+  {
+    selected_sport = 2U;
+  }
+
+  if (page != ui_page)
+  {
+    ui_page = page;
+    UI_ShowPage(ui_page);
+  }
+  else
+  {
+    UI_ShowPage(ui_page);
+  }
+}
+
+static UIPage UI_NextSwipePage(UIPage page)
+{
+  if (page == UI_PAGE_HOME)
+  {
+    return UI_PAGE_NAV;
+  }
+  if (page == UI_PAGE_NAV)
+  {
+    return UI_PAGE_WALK;
+  }
+  if (page == UI_PAGE_WALK)
+  {
+    return UI_PAGE_RUN;
+  }
+  if (page == UI_PAGE_RUN)
+  {
+    return UI_PAGE_ROPE;
+  }
+  return UI_PAGE_HOME;
+}
+
+static UIPage UI_PrevSwipePage(UIPage page)
+{
+  if (page == UI_PAGE_HOME)
+  {
+    return UI_PAGE_ROPE;
+  }
+  if (page == UI_PAGE_ROPE)
+  {
+    return UI_PAGE_RUN;
+  }
+  if (page == UI_PAGE_RUN)
+  {
+    return UI_PAGE_WALK;
+  }
+  if (page == UI_PAGE_WALK)
+  {
+    return UI_PAGE_NAV;
+  }
+  return UI_PAGE_HOME;
+}
+
+static UBYTE UI_PointInRect(UWORD px, UWORD py, UWORD x, UWORD y, UWORD w, UWORD h)
+{
+  return ((px >= x) && (px < (UWORD)(x + w)) && (py >= y) && (py < (UWORD)(y + h))) ? 1U : 0U;
+}
+
+static UBYTE UI_SportAtPoint(UWORD x, UWORD y, UBYTE* sport)
+{
+  if (sport == NULL)
+  {
+    return 0U;
+  }
+
+  if (UI_PointInRect(x, y, 18U, 70U, 204U, 44U) != 0U)
+  {
+    *sport = 0U;
+    return 1U;
+  }
+  if (UI_PointInRect(x, y, 18U, 128U, 204U, 44U) != 0U)
+  {
+    *sport = 1U;
+    return 1U;
+  }
+  if (UI_PointInRect(x, y, 18U, 186U, 204U, 44U) != 0U)
+  {
+    *sport = 2U;
+    return 1U;
+  }
+
+  return 0U;
+}
+
+static UBYTE UI_UseCoordinateRelease(uint32_t press_ms)
+{
+  const uint32_t tap_max_ms = 520U;
+  const int16_t swipe_min_x = 45;
+  const int16_t swipe_max_y = 85;
+  int16_t dx;
+  int16_t dy;
+  UBYTE sport = 0U;
+
+  if ((touch_down_has_xy == 0U) || (touch_last_has_xy == 0U))
+  {
+    return 0U;
+  }
+
+  dx = (int16_t)touch_last_x - (int16_t)touch_down_x;
+  dy = (int16_t)touch_last_y - (int16_t)touch_down_y;
+
+  if ((dx <= -swipe_min_x) && (dy > -swipe_max_y) && (dy < swipe_max_y))
+  {
+    exercise_running = 0U;
+    UI_GotoPage(UI_NextSwipePage(touch_down_page));
+    return 1U;
+  }
+
+  if ((dx >= swipe_min_x) && (dy > -swipe_max_y) && (dy < swipe_max_y))
+  {
+    exercise_running = 0U;
+    UI_GotoPage(UI_PrevSwipePage(touch_down_page));
+    return 1U;
+  }
+
+  if ((ui_page == UI_PAGE_NAV) && (press_ms <= tap_max_ms) &&
+      (UI_SportAtPoint(touch_down_x, touch_down_y, &sport) != 0U))
+  {
+    selected_sport = sport;
+    exercise_running = 0U;
+    UI_GotoPage(UI_SelectedSportPage());
+    return 1U;
+  }
+
+  if (UI_PageIsDetail(ui_page) != 0U)
+  {
+    if ((press_ms <= tap_max_ms) &&
+        (UI_PointInRect(touch_down_x, touch_down_y, 52U, 248U, 136U, 28U) != 0U))
+    {
+      exercise_running = (exercise_running == 0U) ? 1U : 0U;
+      UI_DrawSportActionButton(UI_CurrentSportAccent());
+      return 1U;
+    }
+  }
+
+  return 0U;
+}
+
+static UBYTE UI_PageIsDetail(UIPage page)
+{
+  return ((page == UI_PAGE_WALK) || (page == UI_PAGE_RUN) || (page == UI_PAGE_ROPE)) ? 1U : 0U;
+}
+
+static void UI_LockScreen(void)
+{
+  exercise_running = 0U;
+  screen_locked = 0U;
+  ui_page = UI_PAGE_LOCK;
+  lock_enter_ms = HAL_GetTick();
+  lock_touch_keepalive_ms = lock_enter_ms;
+  touch_suppress_until_release = 0U;
+  touch_pressed_prev = 0U;
+  UI_ShowPage(UI_PAGE_LOCK);
+  LCD_1IN69_SetBackLight(1000U);
+}
+
+static void UI_UnlockToHome(uint32_t now_ms)
+{
+  screen_locked = 0U;
+  exercise_running = 0U;
+  ui_page = UI_PAGE_HOME;
+  last_touch_ms = now_ms;
+  touch_down_ms = now_ms;
+  touch_suppress_until_release = 1U;
+  LCD_1IN69_SetBackLight(1000U);
+  UI_ShowPage(ui_page);
+}
+
+static void UI_HandleTouchPressed(uint32_t now_ms, const TouchSample* sample)
+{
+  touch_down_ms = now_ms;
+  touch_down_page = ui_page;
+  touch_down_has_xy = 0U;
+  touch_last_has_xy = 0U;
+
+  if ((sample != NULL) && (sample->has_xy != 0U))
+  {
+    touch_down_has_xy = 1U;
+    touch_down_x = sample->x;
+    touch_down_y = sample->y;
+    touch_last_has_xy = 1U;
+    touch_last_x = sample->x;
+    touch_last_y = sample->y;
+  }
+
+  if (screen_locked != 0U)
+  {
+    UI_UnlockToHome(now_ms);
+    return;
+  }
+
+  if (ui_page == UI_PAGE_LOCK)
+  {
+    UI_UnlockToHome(now_ms);
+    return;
+  }
+
+  last_touch_ms = now_ms;
+}
+
+static void UI_HandleTouchReleased(uint32_t now_ms, uint32_t press_ms)
+{
+  const uint32_t long_press_ms = 650U;
+
+  if (screen_locked != 0U)
+  {
+    return;
+  }
+
+  last_touch_ms = now_ms;
+
+  if (UI_UseCoordinateRelease(press_ms) != 0U)
+  {
+    return;
+  }
+
+  if (ui_page == UI_PAGE_HOME)
+  {
+    if (press_ms >= long_press_ms)
+    {
+      UI_LockScreen();
+    }
+    else
+    {
+      selected_sport = 0U;
+      ui_page = UI_PAGE_NAV;
+      UI_ShowPage(ui_page);
+    }
+  }
+  else if (ui_page == UI_PAGE_NAV)
+  {
+    if (press_ms >= long_press_ms)
+    {
+      exercise_running = 0U;
+      ui_page = UI_SelectedSportPage();
+      UI_ShowPage(ui_page);
+    }
+    else
+    {
+      selected_sport = (UBYTE)((selected_sport + 1U) % 3U);
+      UI_ShowPage(ui_page);
+    }
+  }
+  else if (UI_PageIsDetail(ui_page) != 0U)
+  {
+    if (press_ms >= long_press_ms)
+    {
+      exercise_running = 0U;
+      ui_page = UI_PAGE_NAV;
+      UI_ShowPage(ui_page);
+    }
+    else
+    {
+      exercise_running = (exercise_running == 0U) ? 1U : 0U;
+      UI_DrawSportActionButton(UI_CurrentSportAccent());
+    }
+  }
+}
+
+static void UI_CheckAutoLock(uint32_t now_ms)
+{
+  if ((screen_locked == 0U) &&
+      (ui_page != UI_PAGE_LOCK) &&
+      (exercise_running == 0U) &&
+      ((now_ms - last_touch_ms) >= 15000U))
+  {
+    UI_LockScreen();
+  }
+}
+
+static TouchSample Touch_ReadSample(void)
+{
+  TouchSample sample = {0U, 0U, 0U, 0U};
+  UWORD x = 0U;
+  UWORD y = 0U;
+  UBYTE irq_pending = 0U;
+
+  if (CST816T_ReadTouch(&x, &y) != 0U)
+  {
+    sample.pressed = 1U;
+    sample.has_xy = 1U;
+    sample.x = x;
+    sample.y = y;
+  }
+  else
+  {
+    __disable_irq();
+    irq_pending = touch_irq_pending;
+    touch_irq_pending = 0U;
+    __enable_irq();
+
+    sample.pressed = ((irq_pending != 0U) ||
+                      (HAL_GPIO_ReadPin(TP_INT_GPIO_Port, TP_INT_Pin) == GPIO_PIN_RESET)) ? 1U : 0U;
+  }
+
+  return sample;
+}
+
+void HAL_GPIO_EXTI_Falling_Callback(uint16_t GPIO_Pin)
+{
+  if (GPIO_Pin == TP_INT_Pin)
+  {
+    touch_irq_pending = 1U;
+  }
 }
 
 /* USER CODE END 0 */
@@ -525,6 +1150,7 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
+  MX_I2C3_Init();
 #if LCD_USE_HAL_SPI
   MX_SPI1_Init();
 #endif
@@ -536,13 +1162,52 @@ int main(void)
 
   LCD_1IN69_SetBackLight(1000U);
   LCD_1IN69_Init(VERTICAL);
-  TouchPins_Init();
+  CST816T_Init();
+#if UI_ASSET_PROGRAMMER
+  {
+    uint32_t written_bytes = 0UL;
+    LCD_1IN69_FillRect_FastStatic(0U, 0U, (UWORD)(LCD_1IN69.WIDTH - 1U), (UWORD)(LCD_1IN69.HEIGHT - 1U), LCD_COLOR_WHITE);
+    LCD_DrawCenteredText("WRITE FLASH", 96U, LCD_COLOR_BLACK, LCD_COLOR_WHITE, 3U);
+    LCD_DrawCenteredText("WAIT", 142U, LCD_COLOR_BLACK, LCD_COLOR_WHITE, 2U);
+    if (UIAssetProgrammer_Run(&written_bytes) != 0U)
+    {
+      LCD_1IN69_FillRect_FastStatic(0U, 0U, (UWORD)(LCD_1IN69.WIDTH - 1U), (UWORD)(LCD_1IN69.HEIGHT - 1U), LCD_COLOR_WHITE);
+      LCD_DrawCenteredText("FLASH OK", 104U, LCD_COLOR_BLACK, LCD_COLOR_WHITE, 3U);
+      LCD_DrawCenteredText("POWER HOLD", 150U, LCD_COLOR_BLACK, LCD_COLOR_WHITE, 2U);
+    }
+    else
+    {
+      LCD_1IN69_FillRect_FastStatic(0U, 0U, (UWORD)(LCD_1IN69.WIDTH - 1U), (UWORD)(LCD_1IN69.HEIGHT - 1U), LCD_COLOR_WHITE);
+      LCD_DrawCenteredText("FLASH FAIL", 104U, LCD_COLOR_BLACK, LCD_COLOR_WHITE, 3U);
+      LCD_DrawCenteredText("CHECK ID", 150U, LCD_COLOR_BLACK, LCD_COLOR_WHITE, 2U);
+    }
+    (void)written_bytes;
+    while (1)
+    {
+      HAL_Delay(1000U);
+    }
+  }
+#endif
+  (void)UIAssets_Init();
   LCD_ShowHelloBuaa();
-  HAL_Delay(5000U);
-  ui_page = 0U;
-  touch_pressed_prev = Touch_IsPressed();
-  ui_last_switch_ms = HAL_GetTick();
-  UI_ShowCarouselScreen(ui_page);
+  {
+    uint32_t hello_start_ms = HAL_GetTick();
+    (void)UIAssets_Preload();
+    while ((HAL_GetTick() - hello_start_ms) < 5000UL)
+    {
+      HAL_Delay(20U);
+    }
+  }
+  ui_page = UI_PAGE_HOME;
+  selected_sport = 0U;
+  screen_locked = 0U;
+  exercise_running = 0U;
+  touch_pressed_prev = 0U;
+  touch_suppress_until_release = 1U;
+  UI_ClockInit(HAL_GetTick());
+  last_touch_ms = HAL_GetTick();
+  touch_down_ms = last_touch_ms;
+  UI_ShowPage(ui_page);
 
   /* USER CODE END 2 */
 
@@ -551,17 +1216,81 @@ int main(void)
   while (1)
   {
     uint32_t now_ms = HAL_GetTick();
-    UBYTE touch_pressed = Touch_IsPressed();
+    TouchSample touch_sample = Touch_ReadSample();
+    UBYTE touch_pressed = touch_sample.pressed;
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-    if (((now_ms - ui_last_switch_ms) >= 1600U) ||
-        ((touch_pressed != 0U) && (touch_pressed_prev == 0U)))
+    UI_ClockUpdate(now_ms);
+    UI_UpdateHomeClock(0U);
+
+    if ((touch_pressed != 0U) && (touch_sample.has_xy != 0U))
     {
-      ui_page = (UBYTE)((ui_page + 1U) % 4U);
-      UI_ShowCarouselScreen(ui_page);
-      ui_last_switch_ms = HAL_GetTick();
+      touch_last_has_xy = 1U;
+      touch_last_x = touch_sample.x;
+      touch_last_y = touch_sample.y;
     }
+
+    if (ui_page == UI_PAGE_LOCK)
+    {
+      UBYTE raw_int_low = (HAL_GPIO_ReadPin(TP_INT_GPIO_Port, TP_INT_Pin) == GPIO_PIN_RESET) ? 1U : 0U;
+      UBYTE raw_activity;
+
+      if ((now_ms - lock_touch_keepalive_ms) >= 500UL)
+      {
+        CST816T_KeepAwake();
+        lock_touch_keepalive_ms = now_ms;
+      }
+
+      raw_activity = CST816T_ReadActivity();
+      if (((now_ms - lock_enter_ms) >= 300UL) &&
+          ((touch_pressed != 0U) || (raw_int_low != 0U) || (raw_activity != 0U)))
+      {
+        UI_UnlockToHome(now_ms);
+        touch_pressed_prev = 1U;
+        HAL_Delay(40U);
+        continue;
+      }
+
+      touch_pressed_prev = touch_pressed;
+      HAL_Delay(40U);
+      continue;
+    }
+
+    if ((screen_locked != 0U) && (touch_pressed != 0U))
+    {
+      UI_UnlockToHome(now_ms);
+      touch_pressed_prev = touch_pressed;
+      HAL_Delay(40U);
+      continue;
+    }
+
+    if (touch_suppress_until_release != 0U)
+    {
+      if (touch_pressed == 0U)
+      {
+        touch_suppress_until_release = 0U;
+        touch_pressed_prev = 0U;
+      }
+      else
+      {
+        touch_pressed_prev = 1U;
+      }
+      HAL_Delay(40U);
+      continue;
+    }
+
+    if ((touch_pressed != 0U) && (touch_pressed_prev == 0U))
+    {
+      UI_HandleTouchPressed(now_ms, &touch_sample);
+    }
+    else if ((touch_pressed == 0U) && (touch_pressed_prev != 0U))
+    {
+      uint32_t press_ms = now_ms - touch_down_ms;
+      UI_HandleTouchReleased(now_ms, press_ms);
+    }
+
+    UI_CheckAutoLock(now_ms);
     touch_pressed_prev = touch_pressed;
     HAL_Delay(40U);
   }
@@ -618,6 +1347,50 @@ void SystemClock_Config(void)
   {
     Error_Handler();
   }
+}
+
+/**
+  * @brief I2C3 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_I2C3_Init(void)
+{
+
+  /* USER CODE BEGIN I2C3_Init 0 */
+
+  /* USER CODE END I2C3_Init 0 */
+
+  /* USER CODE BEGIN I2C3_Init 1 */
+
+  /* USER CODE END I2C3_Init 1 */
+  hi2c3.Instance = I2C3;
+  hi2c3.Init.Timing = 0x00000E14;
+  hi2c3.Init.OwnAddress1 = 0;
+  hi2c3.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
+  hi2c3.Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;
+  hi2c3.Init.OwnAddress2 = 0;
+  hi2c3.Init.OwnAddress2Masks = I2C_OA2_NOMASK;
+  hi2c3.Init.GeneralCallMode = I2C_GENERALCALL_DISABLE;
+  hi2c3.Init.NoStretchMode = I2C_NOSTRETCH_DISABLE;
+  if (HAL_I2C_Init(&hi2c3) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+  if (HAL_I2CEx_ConfigAnalogFilter(&hi2c3, I2C_ANALOGFILTER_ENABLE) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+  if (HAL_I2CEx_ConfigDigitalFilter(&hi2c3, 0) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN I2C3_Init 2 */
+
+  /* USER CODE END I2C3_Init 2 */
+
 }
 
 /**
@@ -711,7 +1484,7 @@ static void MX_GPIO_Init(void)
 
   /*Configure GPIO pin : TP_INT_Pin */
   GPIO_InitStruct.Pin = TP_INT_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
   GPIO_InitStruct.Pull = GPIO_PULLUP;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(TP_INT_GPIO_Port, &GPIO_InitStruct);
@@ -722,6 +1495,10 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(LCD_BLK_GPIO_Port, &GPIO_InitStruct);
+
+  /* EXTI interrupt init*/
+  HAL_NVIC_SetPriority(EXTI8_IRQn, 5, 0);
+  HAL_NVIC_EnableIRQ(EXTI8_IRQn);
 
   /* USER CODE BEGIN MX_GPIO_Init_2 */
 

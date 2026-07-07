@@ -68,6 +68,7 @@ void LCD_1IN69_FillRect_FastStatic(UWORD Xstart, UWORD Ystart, UWORD Xend, UWORD
 void LCD_1IN69_DrawColorBars(void);
 void LCD_1IN69_Display(UWORD *Image);
 void LCD_1IN69_DisplayWindows(UWORD Xstart, UWORD Ystart, UWORD Xend, UWORD Yend, UWORD *Image);
+void LCD_1IN69_DrawRGB565Bytes(UWORD Xstart, UWORD Ystart, UWORD Width, UWORD Height, const UBYTE *Data);
 void LCD_1IN69_DrawPoint(UWORD X, UWORD Y, UWORD Color);
 void LCD_1IN69_SetBackLight(UWORD Value);
 

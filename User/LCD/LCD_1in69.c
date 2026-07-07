@@ -433,6 +433,35 @@ void LCD_1IN69_DisplayWindows(UWORD Xstart, UWORD Ystart, UWORD Xend, UWORD Yend
     LCD_1IN69_CS_1;
 }
 
+void LCD_1IN69_DrawRGB565Bytes(UWORD Xstart, UWORD Ystart, UWORD Width, UWORD Height, const UBYTE *Data)
+{
+    UDOUBLE ByteCount;
+
+    if ((Data == NULL) || (Width == 0U) || (Height == 0U)) {
+        return;
+    }
+
+    if ((Xstart >= LCD_1IN69.WIDTH) || (Ystart >= LCD_1IN69.HEIGHT)) {
+        return;
+    }
+
+    if ((UWORD)(Xstart + Width) > LCD_1IN69.WIDTH) {
+        Width = (UWORD)(LCD_1IN69.WIDTH - Xstart);
+    }
+
+    if ((UWORD)(Ystart + Height) > LCD_1IN69.HEIGHT) {
+        Height = (UWORD)(LCD_1IN69.HEIGHT - Ystart);
+    }
+
+    ByteCount = (UDOUBLE)Width * (UDOUBLE)Height * 2U;
+
+    LCD_1IN69_SetWindows(Xstart, Ystart, (UWORD)(Xstart + Width), (UWORD)(Ystart + Height));
+    LCD_1IN69_DC_1;
+    LCD_1IN69_CS_0;
+    DEV_SPI_WriteBuffer(Data, ByteCount);
+    LCD_1IN69_CS_1;
+}
+
 void LCD_1IN69_DrawPoint(UWORD X, UWORD Y, UWORD Color)
 {
     LCD_1IN69_SetWindows(X, Y, (UWORD)(X + 1U), (UWORD)(Y + 1U));

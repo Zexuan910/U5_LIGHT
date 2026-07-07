@@ -191,6 +191,20 @@ void SysTick_Handler(void)
   /* USER CODE END SysTick_IRQn 1 */
 }
 
+/**
+  * @brief This function handles EXTI Line8 interrupt.
+  */
+void EXTI8_IRQHandler(void)
+{
+  /* USER CODE BEGIN EXTI8_IRQn 0 */
+
+  /* USER CODE END EXTI8_IRQn 0 */
+  HAL_GPIO_EXTI_IRQHandler(TP_INT_Pin);
+  /* USER CODE BEGIN EXTI8_IRQn 1 */
+
+  /* USER CODE END EXTI8_IRQn 1 */
+}
+
 /******************************************************************************/
 /* STM32U5xx Peripheral Interrupt Handlers                                    */
 /* Add here the Interrupt Handlers for the used peripherals.                  */
