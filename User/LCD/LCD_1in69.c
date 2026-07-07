@@ -439,6 +439,34 @@ void LCD_1IN69_DrawPoint(UWORD X, UWORD Y, UWORD Color)
     LCD_1IN69_SendData_16Bit(Color);
 }
 
+void LCD_1IN69_FillRect(UWORD Xstart, UWORD Ystart, UWORD Width, UWORD Height, UWORD Color)
+{
+    uint32_t pixelCount;
+
+    if ((Width == 0U) || (Height == 0U) ||
+        (Xstart >= LCD_1IN69.WIDTH) || (Ystart >= LCD_1IN69.HEIGHT)) {
+        return;
+    }
+
+    if ((UWORD)(Xstart + Width) > LCD_1IN69.WIDTH) {
+        Width = (UWORD)(LCD_1IN69.WIDTH - Xstart);
+    }
+    if ((UWORD)(Ystart + Height) > LCD_1IN69.HEIGHT) {
+        Height = (UWORD)(LCD_1IN69.HEIGHT - Ystart);
+    }
+
+    LCD_1IN69_SetWindows(Xstart, Ystart, (UWORD)(Xstart + Width), (UWORD)(Ystart + Height));
+    LCD_1IN69_DC_1;
+    LCD_1IN69_CS_0;
+    pixelCount = (uint32_t)Width * (uint32_t)Height;
+    while (pixelCount > 0U) {
+        DEV_SPI_WRITE((Color >> 8) & 0xff);
+        DEV_SPI_WRITE(Color & 0xff);
+        pixelCount--;
+    }
+    LCD_1IN69_CS_1;
+}
+
 void LCD_1IN69_SetBackLight(UWORD Value)
 {
     DEV_Set_PWM(Value);

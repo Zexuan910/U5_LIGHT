@@ -23,7 +23,10 @@
 /* USER CODE BEGIN Includes */
 #include "DEV_Config.h"
 #include "gh3018_comm.h"
+#include "gh3018_hrspo2.h"
 #include "LCD_1in69.h"
+#include "motion_service.h"
+#include <stdio.h>
 
 /* USER CODE END Includes */
 
@@ -63,12 +66,15 @@ static void MX_I2C1_Init(void);
 #if LCD_USE_HAL_SPI
 static void MX_SPI1_Init(void);
 #endif
+static void MX_USART1_Debug_Init(void);
 /* USER CODE BEGIN PFP */
 static void LCD_ShowHelloBuaa(void);
 static void UI_ShowCarouselScreen(UBYTE page);
 static void LCD_FillRectByRows(UWORD x0, UWORD y0, UWORD x1, UWORD y1, UWORD color);
 static void TouchPins_Init(void);
 static UBYTE Touch_IsPressed(void);
+static void PrintHrSpo2Snapshot(const char *tag, const Gh3018HrSpo2Snapshot *snapshot);
+static void PrintMotionSnapshot(const char *tag, const MotionServiceSnapshot *snapshot);
 
 /* USER CODE END PFP */
 
@@ -533,14 +539,12 @@ int main(void)
 #if LCD_USE_HAL_SPI
   MX_SPI1_Init();
 #endif
+  MX_USART1_Debug_Init();
   /* USER CODE BEGIN 2 */
   if (DEV_Module_Init() != 0)
   {
     Error_Handler();
   }
-
-  const Gh3018CommSnapshot *gh3018 = Gh3018Comm_RunSelfTest();
-  (void)gh3018;
 
   LCD_1IN69_SetBackLight(1000U);
   LCD_1IN69_Init(VERTICAL);
@@ -551,6 +555,21 @@ int main(void)
   touch_pressed_prev = Touch_IsPressed();
   ui_last_switch_ms = HAL_GetTick();
   UI_ShowCarouselScreen(ui_page);
+
+  printf("\r\nU575 wzx UI with health sensors validation start\r\n");
+  const Gh3018HrSpo2Snapshot *hrspo2 = Gh3018HrSpo2_Init();
+  const MotionServiceSnapshot *motion = MotionService_Init();
+  PrintHrSpo2Snapshot("init", hrspo2);
+  PrintMotionSnapshot("motion-init", motion);
+  uint32_t lastPollTick = HAL_GetTick();
+  uint32_t lastMotionPollTick = HAL_GetTick();
+  uint32_t lastLogTick = HAL_GetTick();
+  Gh3018HrSpo2Status lastStatus = hrspo2->status;
+  uint32_t lastRefreshCount = hrspo2->resultRefreshCount;
+  MotionServiceStatus lastMotionStatus = motion->status;
+  uint32_t lastMotionOutputCount = motion->outputCount;
+  uint32_t lastMotionSteps = motion->steps;
+  uint32_t lastMotionFailCount = motion->readFailCount;
 
   /* USER CODE END 2 */
 
@@ -571,6 +590,38 @@ int main(void)
       ui_last_switch_ms = HAL_GetTick();
     }
     touch_pressed_prev = touch_pressed;
+    uint8_t shouldLog = 0U;
+    if ((now_ms - lastPollTick) >= 50U) {
+      lastPollTick = now_ms;
+      hrspo2 = Gh3018HrSpo2_Poll();
+      if ((hrspo2->status != lastStatus) ||
+          (hrspo2->resultRefreshCount != lastRefreshCount)) {
+        shouldLog = 1U;
+      }
+    }
+
+    if ((now_ms - lastMotionPollTick) >= 20U) {
+      lastMotionPollTick = now_ms;
+      motion = MotionService_Poll(now_ms);
+      if ((motion->status != lastMotionStatus) ||
+          (motion->outputCount != lastMotionOutputCount) ||
+          (motion->steps != lastMotionSteps) ||
+          (motion->readFailCount != lastMotionFailCount)) {
+        shouldLog = 1U;
+      }
+    }
+
+    if ((shouldLog != 0U) || ((now_ms - lastLogTick) >= 1000U)) {
+      PrintHrSpo2Snapshot("poll", hrspo2);
+      PrintMotionSnapshot("motion", motion);
+      lastStatus = hrspo2->status;
+      lastRefreshCount = hrspo2->resultRefreshCount;
+      lastMotionStatus = motion->status;
+      lastMotionOutputCount = motion->outputCount;
+      lastMotionSteps = motion->steps;
+      lastMotionFailCount = motion->readFailCount;
+      lastLogTick = now_ms;
+    }
     HAL_Delay(40U);
   }
   /* USER CODE END 3 */
@@ -797,6 +848,101 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+static void MX_USART1_Debug_Init(void)
+{
+  GPIO_InitTypeDef GPIO_InitStruct = {0};
+  uint32_t uartClockHz;
+
+  __HAL_RCC_GPIOA_CLK_ENABLE();
+  __HAL_RCC_USART1_CLK_ENABLE();
+
+  GPIO_InitStruct.Pin = GPIO_PIN_9|GPIO_PIN_10;
+  GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  GPIO_InitStruct.Alternate = GPIO_AF7_USART1;
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+  CLEAR_BIT(USART1->CR1, USART_CR1_UE);
+  USART1->CR1 = 0U;
+  USART1->CR2 = 0U;
+  USART1->CR3 = 0U;
+
+  uartClockHz = HAL_RCC_GetPCLK2Freq();
+  USART1->BRR = (uartClockHz + (115200U / 2U)) / 115200U;
+  SET_BIT(USART1->CR1, USART_CR1_TE | USART_CR1_RE | USART_CR1_UE);
+}
+
+int __io_putchar(int ch)
+{
+  while ((USART1->ISR & USART_ISR_TXE_TXFNF) == 0U) {
+  }
+  USART1->TDR = (uint8_t)ch;
+  return ch;
+}
+
+static void PrintHrSpo2Snapshot(const char *tag, const Gh3018HrSpo2Snapshot *snapshot)
+{
+  printf("[%s] status=%s comm=%d init=%d start=%d calc=%d int=%u pin_int=%u hbd_on=%u "
+         "poll=%lu calc_cnt=%lu refresh=%lu nodata=%lu raw_len=%u hr=%u hr_conf=%u "
+         "spo2=%u spo2_conf=%u wear=%u invalid=%ld i2c_w=%lu i2c_r=%lu\r\n",
+         tag,
+         Gh3018HrSpo2_StatusName(snapshot->status),
+         (int)snapshot->commStatus,
+         (int)snapshot->hbdSimpleInitRet,
+         (int)snapshot->hbdHrSpo2StartRet,
+         (int)snapshot->hbdCalcRet,
+         (unsigned int)snapshot->intStatus,
+         (unsigned int)snapshot->intLevel,
+         (unsigned int)snapshot->hbdOnLevel,
+         (unsigned long)snapshot->pollCount,
+         (unsigned long)snapshot->calcCount,
+         (unsigned long)snapshot->resultRefreshCount,
+         (unsigned long)snapshot->noDataCount,
+         (unsigned int)snapshot->rawDataLen,
+         (unsigned int)snapshot->heartRate,
+         (unsigned int)snapshot->heartRateConfidence,
+         (unsigned int)snapshot->spo2,
+         (unsigned int)snapshot->spo2Confidence,
+         (unsigned int)snapshot->wearingState,
+         (long)snapshot->spo2InvalidFlag,
+         (unsigned long)snapshot->i2cWriteCount,
+         (unsigned long)snapshot->i2cReadCount);
+}
+
+static void PrintMotionSnapshot(const char *tag, const MotionServiceSnapshot *snapshot)
+{
+  printf("[%s] motion=%s mpu=%s addr=0x%02X who=0x%02X int=%u "
+         "poll=%lu sample=%lu out=%lu fail=%lu steps=%lu rope=%lu dist_cm=%lu "
+         "spd=%u avg=%u stride=%u cad=%u act=%u acc=%d/%d/%d gyro=%d/%d/%d "
+         "hal=%ld i2cerr=0x%08lX\r\n",
+         tag,
+         MotionService_StatusName(snapshot->status),
+         Mpu6050_StatusName(snapshot->mpuStatus),
+         (unsigned int)snapshot->mpuAddress7bit,
+         (unsigned int)snapshot->mpuWhoAmI,
+         (unsigned int)snapshot->mpuIntLevel,
+         (unsigned long)snapshot->pollCount,
+         (unsigned long)snapshot->sampleCount,
+         (unsigned long)snapshot->outputCount,
+         (unsigned long)snapshot->readFailCount,
+         (unsigned long)snapshot->steps,
+         (unsigned long)snapshot->ropeCount,
+         (unsigned long)snapshot->distanceCm,
+         (unsigned int)snapshot->instantSpeedCms,
+         (unsigned int)snapshot->averageSpeedCms,
+         (unsigned int)snapshot->strideCm,
+         (unsigned int)snapshot->cadenceSpm,
+         (unsigned int)snapshot->activityX100,
+         (int)snapshot->accelMg[0],
+         (int)snapshot->accelMg[1],
+         (int)snapshot->accelMg[2],
+         (int)snapshot->gyroMdps[0],
+         (int)snapshot->gyroMdps[1],
+         (int)snapshot->gyroMdps[2],
+         (long)snapshot->lastHalStatus,
+         (unsigned long)snapshot->i2cError);
+}
 
 /* USER CODE END 4 */
 

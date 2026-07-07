@@ -50,6 +50,12 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     User/LCD/lcd_port.c
     User/SelfTest/lcd_selftest.c
     User/GH3018/gh3018_comm.c
+    User/GH3018/gh3018_hrspo2.c
+    User/Motion/mpu6050.c
+    User/Motion/motion_service.c
+    User/Motion/walk_metrics.c
+    User/UI/health_ui.c
+    User/UI/health_lcd.c
 )
 
 get_filename_component(ARM_TOOLCHAIN_BIN_DIR "${CMAKE_C_COMPILER}" DIRECTORY)
@@ -84,6 +90,8 @@ target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
     User/LCD
     User/SelfTest
     User/GH3018
+    User/Motion
+    User/UI
 )
 
 # Add project symbols (macros)
@@ -98,6 +106,7 @@ list(REMOVE_ITEM CMAKE_C_IMPLICIT_LINK_LIBRARIES ob)
 target_link_libraries(${CMAKE_PROJECT_NAME}
     stm32cubemx
     ${CMAKE_CURRENT_SOURCE_DIR}/User/GH3018/lib/hbd_ctrl_GCC9.2.1_M33_hard-fp.a
+    m
 
     # Add user defined libraries
 )
