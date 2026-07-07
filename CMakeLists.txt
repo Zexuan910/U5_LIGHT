@@ -43,11 +43,39 @@ target_link_directories(${CMAKE_PROJECT_NAME} PRIVATE
 )
 
 # Add sources to executable
+message(STATUS "LCD selftest enabled: User/SelfTest/lcd_selftest.c")
 target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     User/Config/DEV_Config.c
     User/LCD/LCD_1in69.c
+    User/LCD/lcd_port.c
     User/SelfTest/lcd_selftest.c
 )
+
+get_filename_component(ARM_TOOLCHAIN_BIN_DIR "${CMAKE_C_COMPILER}" DIRECTORY)
+find_program(ARM_OBJCOPY arm-none-eabi-objcopy
+    HINTS "${ARM_TOOLCHAIN_BIN_DIR}"
+    NO_DEFAULT_PATH
+)
+if(NOT ARM_OBJCOPY)
+    find_program(ARM_OBJCOPY arm-none-eabi-objcopy)
+endif()
+if(NOT ARM_OBJCOPY AND CMAKE_OBJCOPY)
+    set(ARM_OBJCOPY "${CMAKE_OBJCOPY}")
+endif()
+
+if(ARM_OBJCOPY)
+    add_custom_command(TARGET ${CMAKE_PROJECT_NAME} POST_BUILD
+        COMMAND "${ARM_OBJCOPY}" -O ihex
+                "$<TARGET_FILE:${CMAKE_PROJECT_NAME}>"
+                "$<TARGET_FILE_DIR:${CMAKE_PROJECT_NAME}>/${CMAKE_PROJECT_NAME}.hex"
+        COMMAND "${ARM_OBJCOPY}" -O binary
+                "$<TARGET_FILE:${CMAKE_PROJECT_NAME}>"
+                "$<TARGET_FILE_DIR:${CMAKE_PROJECT_NAME}>/${CMAKE_PROJECT_NAME}.bin"
+        COMMENT "Generating ${CMAKE_PROJECT_NAME}.hex and ${CMAKE_PROJECT_NAME}.bin"
+    )
+else()
+    message(WARNING "arm-none-eabi-objcopy was not found; flash tasks need ${CMAKE_PROJECT_NAME}.hex")
+endif()
 
 # Add include paths
 target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE

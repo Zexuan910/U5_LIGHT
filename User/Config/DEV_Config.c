@@ -8,7 +8,23 @@
 
 void DEV_SPI_WRite(UBYTE _dat)
 {
-    HAL_SPI_Transmit(&hspi1, (uint8_t *)&_dat, 1, 500);
+    if (HAL_SPI_Transmit(&hspi1, &_dat, 1, 500) != HAL_OK) {
+        Error_Handler();
+    }
+}
+
+void DEV_SPI_WriteBuffer(const UBYTE *Data, UDOUBLE Len)
+{
+    while (Len > 0U) {
+        uint16_t Chunk = (Len > 65535U) ? 65535U : (uint16_t)Len;
+
+        if (HAL_SPI_Transmit(&hspi1, (uint8_t *)Data, Chunk, HAL_MAX_DELAY) != HAL_OK) {
+            Error_Handler();
+        }
+
+        Data += Chunk;
+        Len -= Chunk;
+    }
 }
 
 void DEV_SetBacklight(UWORD Value)
@@ -22,7 +38,6 @@ int DEV_Module_Init(void)
     DEV_Digital_Write(DEV_CS_PIN, 1);
     DEV_Digital_Write(DEV_RST_PIN, 1);
     DEV_SetBacklight(DEV_BL_PWM_MAX);
-
     return 0;
 }
 

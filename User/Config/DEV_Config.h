@@ -33,6 +33,7 @@ extern SPI_HandleTypeDef hspi1;
 #define DEV_Set_PWM(_Value) DEV_SetBacklight(_Value)
 
 void DEV_SPI_WRite(UBYTE _dat);
+void DEV_SPI_WriteBuffer(const UBYTE *Data, UDOUBLE Len);
 void DEV_SetBacklight(UWORD Value);
 int DEV_Module_Init(void);
 void DEV_Module_Exit(void);
