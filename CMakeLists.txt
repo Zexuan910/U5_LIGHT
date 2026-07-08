@@ -52,6 +52,7 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     User/LCD/lcd_port.c
     User/SelfTest/lcd_selftest.c
     User/Touch/cst816t.c
+    User/Touch/touch_controller.c
     User/UI/ui_asset_package.c
     User/UI/ui_asset_programmer.c
     User/UI/ui_assets.c

@@ -11,6 +11,8 @@ void CST816T_Init(void);
 UBYTE CST816T_IsConnected(void);
 void CST816T_KeepAwake(void);
 UBYTE CST816T_ReadTouch(UWORD* x, UWORD* y);
+UBYTE CST816T_ReadTouchLoose(UWORD* x, UWORD* y);
+UBYTE CST816T_ReadGesture(UBYTE* gesture);
 UBYTE CST816T_ReadActivity(void);
 UBYTE CST816T_ReadDebug(UBYTE* chip_id, UBYTE* finger, UWORD* x, UWORD* y);
 

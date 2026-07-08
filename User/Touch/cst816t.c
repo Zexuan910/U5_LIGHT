@@ -9,7 +9,7 @@ extern I2C_HandleTypeDef hi2c3;
 #define CST816T_REG_CHIP_ID        0xA7U
 #define CST816T_REG_LONG_PRESS     0xEBU
 #define CST816T_REG_AUTO_SLEEP     0xFEU
-#define CST816T_I2C_TIMEOUT_MS     20U
+#define CST816T_I2C_TIMEOUT_MS     50U
 
 static UBYTE cst816t_connected = 0U;
 
@@ -33,6 +33,59 @@ static void CST816T_WriteReg(UBYTE reg, UBYTE value)
                           &value,
                           1U,
                           CST816T_I2C_TIMEOUT_MS);
+}
+
+static UBYTE CST816T_ReadPointRaw(UWORD* x, UWORD* y, UBYTE* finger)
+{
+  UBYTE chip_id = 0U;
+  UBYTE buf[5] = {0U, 0U, 0U, 0U, 0U};
+  UWORD raw_x;
+  UWORD raw_y;
+
+  if ((x == NULL) || (y == NULL))
+  {
+    return 0U;
+  }
+
+  if (cst816t_connected == 0U)
+  {
+    if (CST816T_ReadReg(CST816T_REG_CHIP_ID, &chip_id, 1U) != HAL_OK)
+    {
+      return 0U;
+    }
+    cst816t_connected = 1U;
+  }
+
+  if (CST816T_ReadReg(CST816T_REG_FINGER_NUM, buf, sizeof(buf)) != HAL_OK)
+  {
+    cst816t_connected = 0U;
+    return 0U;
+  }
+
+  raw_x = (UWORD)((((UWORD)buf[1] & 0x0FU) << 8) | buf[2]);
+  raw_y = (UWORD)((((UWORD)buf[3] & 0x0FU) << 8) | buf[4]);
+
+  if ((raw_x >= CST816T_WIDTH) && (raw_x < CST816T_HEIGHT) &&
+      (raw_y < CST816T_WIDTH))
+  {
+    UWORD swapped = raw_x;
+    raw_x = raw_y;
+    raw_y = swapped;
+  }
+
+  if ((raw_x >= CST816T_WIDTH) || (raw_y >= CST816T_HEIGHT))
+  {
+    return 0U;
+  }
+
+  *x = raw_x;
+  *y = raw_y;
+  if (finger != NULL)
+  {
+    *finger = (UBYTE)(buf[0] & 0x0FU);
+  }
+  cst816t_connected = 1U;
+  return 1U;
 }
 
 void CST816T_Init(void)
@@ -69,49 +122,42 @@ void CST816T_KeepAwake(void)
 
 UBYTE CST816T_ReadTouch(UWORD* x, UWORD* y)
 {
-  UBYTE buf[5] = {0U, 0U, 0U, 0U, 0U};
-  UBYTE finger;
-  UWORD raw_x;
-  UWORD raw_y;
+  UBYTE finger = 0U;
 
-  if ((x == NULL) || (y == NULL))
+  if (CST816T_ReadPointRaw(x, y, &finger) == 0U)
   {
     return 0U;
   }
 
-  if (CST816T_ReadReg(CST816T_REG_FINGER_NUM, buf, sizeof(buf)) != HAL_OK)
-  {
-    return 0U;
-  }
-
-  finger = (UBYTE)(buf[0] & 0x0FU);
   if ((finger == 0U) || (finger > 2U))
   {
     return 0U;
   }
 
-  raw_x = (UWORD)((((UWORD)buf[1] & 0x0FU) << 8) | buf[2]);
-  raw_y = (UWORD)((((UWORD)buf[3] & 0x0FU) << 8) | buf[4]);
+  return 1U;
+}
 
-  if ((raw_x >= CST816T_WIDTH) && (raw_x < CST816T_HEIGHT) &&
-      (raw_y < CST816T_WIDTH))
+UBYTE CST816T_ReadTouchLoose(UWORD* x, UWORD* y)
+{
+  return CST816T_ReadPointRaw(x, y, NULL);
+}
+
+UBYTE CST816T_ReadGesture(UBYTE* gesture)
+{
+  UBYTE value = 0U;
+
+  if (gesture == NULL)
   {
-    UWORD swapped = raw_x;
-    raw_x = raw_y;
-    raw_y = swapped;
+    return 0U;
   }
 
-  if (raw_x >= CST816T_WIDTH)
+  if (CST816T_ReadReg(CST816T_REG_GESTURE_ID, &value, 1U) != HAL_OK)
   {
-    raw_x = CST816T_WIDTH - 1U;
-  }
-  if (raw_y >= CST816T_HEIGHT)
-  {
-    raw_y = CST816T_HEIGHT - 1U;
+    cst816t_connected = 0U;
+    return 0U;
   }
 
-  *x = raw_x;
-  *y = raw_y;
+  *gesture = value;
   cst816t_connected = 1U;
   return 1U;
 }
