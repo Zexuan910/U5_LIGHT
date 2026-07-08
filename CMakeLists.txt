@@ -50,6 +50,8 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     User/Flash/ext_flash.c
     User/LCD/LCD_1in69.c
     User/LCD/lcd_port.c
+    User/Motion/imu_sensor.c
+    User/Motion/walk_metrics.c
     User/SelfTest/lcd_selftest.c
     User/Touch/cst816t.c
     User/Touch/touch_controller.c
@@ -89,6 +91,7 @@ target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
     User/Config
     User/Flash
     User/LCD
+    User/Motion
     User/SelfTest
     User/Touch
     User/UI

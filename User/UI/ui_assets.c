@@ -10,7 +10,7 @@
 #define UI_ASSET_MAGIC2 'U'
 #define UI_ASSET_MAGIC3 'I'
 #define UI_ASSET_VERSION 1UL
-#define UI_ASSET_COUNT 2UL
+#define UI_ASSET_COUNT 3UL
 #define UI_ASSET_ENTRY_SIZE 32UL
 #define UI_ASSET_HEADER_SIZE (12UL + (UI_ASSET_COUNT * UI_ASSET_ENTRY_SIZE))
 #define UI_ASSET_WIDTH 240UL
@@ -26,11 +26,12 @@ typedef struct {
 } UIAssetDesc;
 
 static uint8_t ui_assets_ready = 0U;
-static uint8_t ui_asset_loaded[UI_ASSET_COUNT] = {0U, 0U};
+static uint8_t ui_asset_loaded[UI_ASSET_COUNT] = {0U, 0U, 0U};
 static uint8_t ui_asset_cache[UI_ASSET_COUNT][UI_ASSET_IMAGE_SIZE];
 static const UIAssetDesc ui_asset_desc[UI_ASSET_COUNT] = {
     { UI_ASSET_HEADER_SIZE, UI_ASSET_IMAGE_SIZE, UI_ASSET_WIDTH, UI_ASSET_HEIGHT },
-    { UI_ASSET_HEADER_SIZE + UI_ASSET_IMAGE_SIZE, UI_ASSET_IMAGE_SIZE, UI_ASSET_WIDTH, UI_ASSET_HEIGHT }
+    { UI_ASSET_HEADER_SIZE + UI_ASSET_IMAGE_SIZE, UI_ASSET_IMAGE_SIZE, UI_ASSET_WIDTH, UI_ASSET_HEIGHT },
+    { UI_ASSET_HEADER_SIZE + (2UL * UI_ASSET_IMAGE_SIZE), UI_ASSET_IMAGE_SIZE, UI_ASSET_WIDTH, UI_ASSET_HEIGHT }
 };
 
 static uint32_t UIAssets_ReadU32LE(const uint8_t* data)

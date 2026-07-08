@@ -8,12 +8,14 @@ from PIL import Image
 
 ROOT = Path(__file__).resolve().parents[1]
 H750_IMAGES = Path(r"D:\WZX\IDE_workplace\touch\H750_TouchGFX\TouchGFX\assets\images")
-USER_WATCH_BG = Path(r"C:\Users\35156\Downloads\ChatGPT Image 2026年7月8日 19_55_33.png")
+USER_WATCH_BG = Path("C:/Users/35156/Downloads/ChatGPT Image 2026\u5e747\u67088\u65e5 19_55_33.png")
+USER_NAV_BG = Path("D:/WZX/\u4f5c\u4e1a/\u6570\u7535/ChatGPT Image 2026\u5e747\u67083\u65e5 18_37_47.png")
 OUT_DIR = ROOT / "Assets" / "extflash"
 PACKAGE_C = ROOT / "User" / "UI" / "ui_asset_package.c"
 
 ASSETS = [
     ("watch_bg", USER_WATCH_BG),
+    ("nav_bg", USER_NAV_BG),
     ("sport_bg", H750_IMAGES / "sport_bg.png"),
 ]
 

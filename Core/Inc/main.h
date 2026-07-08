@@ -73,6 +73,8 @@ void Error_Handler(void);
 #define TP_RST_GPIO_Port GPIOE
 #define TP_INT_Pin GPIO_PIN_8
 #define TP_INT_GPIO_Port GPIOE
+#define MPU6050_INT_Pin GPIO_PIN_0
+#define MPU6050_INT_GPIO_Port GPIOA
 #define FLASH_CS_Pin GPIO_PIN_2
 #define FLASH_CS_GPIO_Port GPIOA
 #define FLASH_CLK_Pin GPIO_PIN_3

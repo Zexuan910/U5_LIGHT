@@ -22,13 +22,16 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include <stdio.h>
+#include <string.h>
 
 #include "DEV_Config.h"
 #include "LCD_1in69.h"
 #include "cst816t.h"
+#include "imu_sensor.h"
 #include "touch_controller.h"
 #include "ui_asset_programmer.h"
 #include "ui_assets.h"
+#include "walk_metrics.h"
 
 /* USER CODE END Includes */
 
@@ -43,6 +46,7 @@
 #define UI_SPORT_COUNT 3U
 #define UI_EXERCISE_TIME_SCALE_NUM 2UL
 #define UI_EXERCISE_TIME_SCALE_DEN 1UL
+#define UI_WALK_FIELD_INVALID 0xFFFFFFFFUL
 
 /* USER CODE END PD */
 
@@ -54,6 +58,7 @@
 /* Private variables ---------------------------------------------------------*/
 
 SPI_HandleTypeDef hspi1;
+I2C_HandleTypeDef hi2c2;
 I2C_HandleTypeDef hi2c3;
 
 /* USER CODE BEGIN PV */
@@ -104,6 +109,12 @@ static uint32_t exercise_start_ms[UI_SPORT_COUNT] = {0U, 0U, 0U};
 static uint32_t exercise_elapsed_seconds[UI_SPORT_COUNT] = {0U, 0U, 0U};
 static uint32_t ui_sport_time_key[UI_SPORT_COUNT] = {0xFFFFFFFFUL, 0xFFFFFFFFUL, 0xFFFFFFFFUL};
 static UBYTE exercise_running[UI_SPORT_COUNT] = {0U, 0U, 0U};
+static WalkMetricsState walk_metrics_state;
+static WalkMetricsOutput walk_metrics_output;
+static uint32_t ui_walk_distance_key = UI_WALK_FIELD_INVALID;
+static uint32_t ui_walk_now_speed_key = UI_WALK_FIELD_INVALID;
+static uint32_t ui_walk_avg_speed_key = UI_WALK_FIELD_INVALID;
+static uint32_t ui_walk_step_key = UI_WALK_FIELD_INVALID;
 static UIClock ui_clock = {2026U, 7U, 7U, 12U, 30U, 0U, 2U};
 static uint32_t ui_clock_tick_ms = 0U;
 static uint32_t ui_home_clock_key = 0xFFFFFFFFUL;
@@ -114,6 +125,7 @@ static UBYTE screen_locked = 0U;
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
+static void MX_I2C2_Init(void);
 static void MX_I2C3_Init(void);
 #if LCD_USE_HAL_SPI
 static void MX_SPI1_Init(void);
@@ -131,6 +143,8 @@ static void UI_HandleTouchReleased(uint32_t now_ms, uint32_t press_ms);
 static UBYTE UI_TryRealtimeSwipe(uint32_t now_ms);
 static void UI_DrawSportActionButton(UWORD accent);
 static void UI_UpdateSportTimer(uint32_t now_ms, UBYTE force);
+static void UI_UpdateWalkMetrics(uint32_t now_ms);
+static void UI_UpdateWalkDataDisplay(UBYTE force);
 static void UI_CheckAutoLock(uint32_t now_ms);
 static void LCD_FillRectByRows(UWORD x0, UWORD y0, UWORD x1, UWORD y1, UWORD color);
 static TouchSample Touch_ReadSample(void);
@@ -653,6 +667,107 @@ static void UI_DrawSportTimeField(uint32_t seconds)
   ui_sport_time_key[UI_CurrentSportIndex()] = seconds;
 }
 
+static uint32_t UI_WalkDistanceKey(float distance_m)
+{
+  if (distance_m <= 0.0f)
+  {
+    return 0UL;
+  }
+  if (distance_m >= 99990.0f)
+  {
+    return 9999UL;
+  }
+  return (uint32_t)((distance_m / 10.0f) + 0.5f);
+}
+
+static uint32_t UI_WalkSpeedKey(float speed_mps)
+{
+  if (speed_mps <= 0.0f)
+  {
+    return 0UL;
+  }
+  if (speed_mps >= 99.9f)
+  {
+    return 999UL;
+  }
+  return (uint32_t)((speed_mps * 10.0f) + 0.5f);
+}
+
+static void UI_FormatWalkDistance(uint32_t centi_km, char* out, size_t out_size)
+{
+  if (centi_km > 9999UL)
+  {
+    centi_km = 9999UL;
+  }
+
+  (void)snprintf(out, out_size, "%lu.%02lu",
+                 (unsigned long)(centi_km / 100UL),
+                 (unsigned long)(centi_km % 100UL));
+}
+
+static void UI_FormatWalkSpeed(uint32_t speed_x10, char* out, size_t out_size)
+{
+  if (speed_x10 > 999UL)
+  {
+    speed_x10 = 999UL;
+  }
+
+  (void)snprintf(out, out_size, "%lu.%lu",
+                 (unsigned long)(speed_x10 / 10UL),
+                 (unsigned long)(speed_x10 % 10UL));
+}
+
+static void UI_FormatWalkStep(uint32_t steps, char* out, size_t out_size)
+{
+  if (steps > 99999UL)
+  {
+    steps = 99999UL;
+  }
+
+  (void)snprintf(out, out_size, "%lu", (unsigned long)steps);
+}
+
+static void UI_DrawSportMainField(const char* value_text, const char* label_text)
+{
+  UWORD main_bg = LCD_RGB565(226U, 236U, 240U);
+  UWORD muted = LCD_RGB565(40U, 50U, 62U);
+
+  LCD_FillBox(0U, 42U, 240U, 58U, main_bg);
+  LCD_DrawCenteredTextInRectTransparent(0U, 48U, 240U, value_text, LCD_COLOR_BLACK, 3U);
+  LCD_DrawCenteredTextInRectTransparent(0U, 84U, 240U, label_text, muted, 1U);
+}
+
+static void UI_DrawWalkDistanceField(uint32_t centi_km)
+{
+  char text[8];
+
+  UI_FormatWalkDistance(centi_km, text, sizeof(text));
+  UI_DrawSportMainField(text, "KM");
+  ui_walk_distance_key = centi_km;
+}
+
+static void UI_DrawWalkSpeedField(UWORD x, UWORD y, UWORD w, UWORD bg, uint32_t speed_x10)
+{
+  char text[6];
+  UWORD stat_text = LCD_RGB565(238U, 244U, 255U);
+
+  UI_FormatWalkSpeed(speed_x10, text, sizeof(text));
+  LCD_FillBox(x, y, w, 16U, bg);
+  LCD_DrawText(x, y, text, stat_text, bg, 1U);
+}
+
+static void UI_DrawWalkStepField(uint32_t steps)
+{
+  char text[8];
+  UWORD box4 = LCD_RGB565(70U, 70U, 143U);
+  UWORD stat_text = LCD_RGB565(238U, 244U, 255U);
+
+  UI_FormatWalkStep(steps, text, sizeof(text));
+  LCD_FillBox(166U, 195U, 54U, 16U, box4);
+  LCD_DrawText(166U, 195U, text, stat_text, box4, 1U);
+  ui_walk_step_key = steps;
+}
+
 static void UI_UpdateSportTimer(uint32_t now_ms, UBYTE force)
 {
   uint32_t seconds;
@@ -669,6 +784,68 @@ static void UI_UpdateSportTimer(uint32_t now_ms, UBYTE force)
   }
 }
 
+static void UI_UpdateWalkDataDisplay(UBYTE force)
+{
+  uint32_t distance_key;
+  uint32_t now_speed_key;
+  uint32_t avg_speed_key;
+  uint32_t step_key;
+
+  if (ui_page != UI_PAGE_WALK)
+  {
+    return;
+  }
+
+  distance_key = UI_WalkDistanceKey(walk_metrics_output.distance_m);
+  now_speed_key = UI_WalkSpeedKey(walk_metrics_output.instant_speed_mps);
+  avg_speed_key = UI_WalkSpeedKey(walk_metrics_output.average_speed_mps);
+  step_key = walk_metrics_output.step_count;
+
+  if ((force != 0U) || (distance_key != ui_walk_distance_key))
+  {
+    UI_DrawWalkDistanceField(distance_key);
+  }
+  if ((force != 0U) || (now_speed_key != ui_walk_now_speed_key))
+  {
+    UI_DrawWalkSpeedField(20U, 195U, 42U, LCD_RGB565(22U, 104U, 63U), now_speed_key);
+    ui_walk_now_speed_key = now_speed_key;
+  }
+  if ((force != 0U) || (avg_speed_key != ui_walk_avg_speed_key))
+  {
+    UI_DrawWalkSpeedField(93U, 195U, 48U, LCD_RGB565(128U, 72U, 29U), avg_speed_key);
+    ui_walk_avg_speed_key = avg_speed_key;
+  }
+  if ((force != 0U) || (step_key != ui_walk_step_key))
+  {
+    UI_DrawWalkStepField(step_key);
+  }
+}
+
+static void UI_UpdateWalkMetrics(uint32_t now_ms)
+{
+  IMU_SensorSample imu_sample;
+  WalkMetricsImuSample walk_sample;
+
+  if (exercise_running[0] == 0U)
+  {
+    return;
+  }
+
+  if (!IMU_Sensor_Read(&imu_sample))
+  {
+    return;
+  }
+
+  walk_sample.tick_ms = now_ms;
+  for (UBYTE i = 0U; i < 3U; i++)
+  {
+    walk_sample.accel_g[i] = imu_sample.accel_g[i];
+    walk_sample.gyro_rad_s[i] = imu_sample.gyro_rad_s[i];
+  }
+
+  WalkMetrics_Update(&walk_metrics_state, &walk_sample, &walk_metrics_output);
+}
+
 static void UI_ToggleExercise(uint32_t now_ms)
 {
   UBYTE sport = UI_CurrentSportIndex();
@@ -677,16 +854,30 @@ static void UI_ToggleExercise(uint32_t now_ms)
   {
     exercise_elapsed_seconds[sport] = UI_ExerciseElapsedSeconds(now_ms);
     exercise_running[sport] = 0U;
+    if (sport == 0U)
+    {
+      WalkMetrics_Stop(&walk_metrics_state);
+    }
   }
   else
   {
     exercise_elapsed_seconds[sport] = 0U;
     exercise_start_ms[sport] = now_ms;
     exercise_running[sport] = 1U;
+    if (sport == 0U)
+    {
+      WalkMetrics_Start(&walk_metrics_state, now_ms);
+      memset(&walk_metrics_output, 0, sizeof(walk_metrics_output));
+      ui_walk_distance_key = UI_WALK_FIELD_INVALID;
+      ui_walk_now_speed_key = UI_WALK_FIELD_INVALID;
+      ui_walk_avg_speed_key = UI_WALK_FIELD_INVALID;
+      ui_walk_step_key = UI_WALK_FIELD_INVALID;
+    }
   }
 
   UI_DrawSportActionButton(UI_CurrentSportAccent());
   UI_UpdateSportTimer(now_ms, 1U);
+  UI_UpdateWalkDataDisplay(1U);
 }
 
 static void UI_DrawSportActionButton(UWORD accent)
@@ -746,7 +937,7 @@ static void UI_ShowSportMenu(UBYTE selected)
   UWORD card2 = LCD_RGB565(48U, 58U, 125U);
   UWORD card_text = LCD_RGB565(190U, 206U, 222U);
 
-  if (UIAssets_DrawBackground(UI_ASSET_SPORT_BG) == 0U)
+  if (UIAssets_DrawBackground(UI_ASSET_NAV_BG) == 0U)
   {
     LCD_FillScreenByRows(bg);
   }
@@ -795,7 +986,6 @@ static void UI_DrawSportDetail(const char* title_text, UWORD accent, const char*
 {
   UWORD bg = LCD_RGB565(5U, 13U, 26U);
   UWORD title = LCD_COLOR_BLACK;
-  UWORD muted = LCD_RGB565(40U, 50U, 62U);
   UWORD heart = LCD_RGB565(130U, 18U, 18U);
   UWORD stat_text = LCD_RGB565(238U, 244U, 255U);
   UWORD stat_label = LCD_RGB565(142U, 158U, 178U);
@@ -815,8 +1005,7 @@ static void UI_DrawSportDetail(const char* title_text, UWORD accent, const char*
   LCD_FillBox(0U, 0U, 240U, 5U, accent);
   LCD_DrawTextTransparent(12U, 14U, title_text, title, 2U);
   LCD_DrawTextTransparent(157U, 18U, "HR 146", heart, 1U);
-  LCD_DrawCenteredTextInRectTransparent(0U, 48U, 240U, main_value, LCD_COLOR_BLACK, 3U);
-  LCD_DrawCenteredTextInRectTransparent(0U, 84U, 240U, main_label, muted, 1U);
+  UI_DrawSportMainField(main_value, main_label);
 
   LCD_FillBox(12U, 110U, 104U, 58U, box0);
   UI_DrawSportTimeField(UI_ExerciseElapsedSeconds(now_ms));
@@ -860,6 +1049,7 @@ static void UI_ShowPage(UIPage page)
     UI_DrawSportDetail("WALK", LCD_RGB565(63U, 212U, 122U), "0.00", "KM",
                        "00:00", "98%", "0.0", "0.0", "0",
                        "TIME", "SPO2", "NOW", "AVG", "STEP");
+    UI_UpdateWalkDataDisplay(1U);
     break;
   case UI_PAGE_RUN:
     UI_DrawSportDetail("RUN", LCD_RGB565(255U, 106U, 61U), "4.32", "KM",
@@ -1225,6 +1415,10 @@ void HAL_GPIO_EXTI_Falling_Callback(uint16_t GPIO_Pin)
   {
     TouchController_NotifyInterrupt();
   }
+  else if (GPIO_Pin == MPU6050_INT_Pin)
+  {
+    /* MPU6050 samples are polled in the main loop. */
+  }
 }
 
 /* USER CODE END 0 */
@@ -1258,6 +1452,7 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
+  MX_I2C2_Init();
   MX_I2C3_Init();
 #if LCD_USE_HAL_SPI
   MX_SPI1_Init();
@@ -1267,6 +1462,9 @@ int main(void)
   {
     Error_Handler();
   }
+  IMU_Sensor_Init();
+  WalkMetrics_Reset(&walk_metrics_state);
+  memset(&walk_metrics_output, 0, sizeof(walk_metrics_output));
 
   LCD_1IN69_SetBackLight(1000U);
   LCD_1IN69_Init(VERTICAL);
@@ -1331,8 +1529,10 @@ int main(void)
 
     /* USER CODE BEGIN 3 */
     UI_ClockUpdate(now_ms);
+    UI_UpdateWalkMetrics(now_ms);
     UI_UpdateHomeClock(0U);
     UI_UpdateSportTimer(now_ms, 0U);
+    UI_UpdateWalkDataDisplay(0U);
 
     if ((raw_touch_pressed != 0U) && (touch_sample.has_xy != 0U))
     {
@@ -1499,6 +1699,50 @@ void SystemClock_Config(void)
 }
 
 /**
+  * @brief I2C2 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_I2C2_Init(void)
+{
+
+  /* USER CODE BEGIN I2C2_Init 0 */
+
+  /* USER CODE END I2C2_Init 0 */
+
+  /* USER CODE BEGIN I2C2_Init 1 */
+
+  /* USER CODE END I2C2_Init 1 */
+  hi2c2.Instance = I2C2;
+  hi2c2.Init.Timing = 0x00000E14;
+  hi2c2.Init.OwnAddress1 = 0;
+  hi2c2.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
+  hi2c2.Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;
+  hi2c2.Init.OwnAddress2 = 0;
+  hi2c2.Init.OwnAddress2Masks = I2C_OA2_NOMASK;
+  hi2c2.Init.GeneralCallMode = I2C_GENERALCALL_DISABLE;
+  hi2c2.Init.NoStretchMode = I2C_NOSTRETCH_DISABLE;
+  if (HAL_I2C_Init(&hi2c2) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+  if (HAL_I2CEx_ConfigAnalogFilter(&hi2c2, I2C_ANALOGFILTER_ENABLE) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+  if (HAL_I2CEx_ConfigDigitalFilter(&hi2c2, 0) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN I2C2_Init 2 */
+
+  /* USER CODE END I2C2_Init 2 */
+
+}
+
+/**
   * @brief I2C3 Initialization Function
   * @param None
   * @retval None
@@ -1624,6 +1868,13 @@ static void MX_GPIO_Init(void)
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(LCD_BLK_GPIO_Port, LCD_BLK_Pin, GPIO_PIN_RESET);
 
+  /*Configure GPIO pin : MPU6050_INT_Pin */
+  GPIO_InitStruct.Pin = MPU6050_INT_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(MPU6050_INT_GPIO_Port, &GPIO_InitStruct);
+
   /*Configure GPIO pins : LCD_RST_Pin LCD_CS_Pin LCD_DC_Pin TP_RST_Pin */
   GPIO_InitStruct.Pin = LCD_RST_Pin|LCD_CS_Pin|LCD_DC_Pin|TP_RST_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
@@ -1646,6 +1897,9 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_Init(LCD_BLK_GPIO_Port, &GPIO_InitStruct);
 
   /* EXTI interrupt init*/
+  HAL_NVIC_SetPriority(EXTI0_IRQn, 5, 0);
+  HAL_NVIC_EnableIRQ(EXTI0_IRQn);
+
   HAL_NVIC_SetPriority(EXTI8_IRQn, 5, 0);
   HAL_NVIC_EnableIRQ(EXTI8_IRQn);
 

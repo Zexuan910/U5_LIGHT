@@ -173,6 +173,30 @@ void HAL_I2C_MspInit(I2C_HandleTypeDef* hi2c)
   GPIO_InitTypeDef GPIO_InitStruct = {0};
   RCC_PeriphCLKInitTypeDef PeriphClkInit = {0};
 
+  if (hi2c->Instance == I2C2)
+  {
+    PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_I2C2;
+    PeriphClkInit.I2c2ClockSelection = RCC_I2C2CLKSOURCE_PCLK1;
+    if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit) != HAL_OK)
+    {
+      Error_Handler();
+    }
+
+    __HAL_RCC_GPIOB_CLK_ENABLE();
+    /**I2C2 GPIO Configuration
+    PB10     ------> I2C2_SCL
+    PB14     ------> I2C2_SDA
+    */
+    GPIO_InitStruct.Pin = GPIO_PIN_10|GPIO_PIN_14;
+    GPIO_InitStruct.Mode = GPIO_MODE_AF_OD;
+    GPIO_InitStruct.Pull = GPIO_PULLUP;
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
+    GPIO_InitStruct.Alternate = GPIO_AF4_I2C2;
+    HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
+    __HAL_RCC_I2C2_CLK_ENABLE();
+  }
+
   if (hi2c->Instance == I2C3)
   {
     PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_I2C3;
@@ -206,7 +230,12 @@ void HAL_I2C_MspInit(I2C_HandleTypeDef* hi2c)
   */
 void HAL_I2C_MspDeInit(I2C_HandleTypeDef* hi2c)
 {
-  if (hi2c->Instance == I2C3)
+  if (hi2c->Instance == I2C2)
+  {
+    __HAL_RCC_I2C2_CLK_DISABLE();
+    HAL_GPIO_DeInit(GPIOB, GPIO_PIN_10|GPIO_PIN_14);
+  }
+  else if (hi2c->Instance == I2C3)
   {
     __HAL_RCC_I2C3_CLK_DISABLE();
     HAL_GPIO_DeInit(GPIOC, GPIO_PIN_0|GPIO_PIN_1);
