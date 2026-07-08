@@ -4,7 +4,7 @@
 #include <stddef.h>
 #include <string.h>
 
-#define WALK_OUTPUT_PERIOD_MS      500U
+#define WALK_OUTPUT_PERIOD_MS      100U
 #define WALK_START_SETTLE_MS       300U
 #define WALK_MIN_STEP_INTERVAL_MS  320U
 #define WALK_MAX_STEP_INTERVAL_MS  1800U

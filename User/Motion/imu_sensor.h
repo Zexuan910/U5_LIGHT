@@ -18,6 +18,8 @@ typedef struct
 
 void IMU_Sensor_Init(void);
 bool IMU_Sensor_IsReady(void);
+bool IMU_Sensor_ResetFifo(void);
+uint16_t IMU_Sensor_PendingSamples(void);
 bool IMU_Sensor_Read(IMU_SensorSample* sample);
 
 #ifdef __cplusplus
