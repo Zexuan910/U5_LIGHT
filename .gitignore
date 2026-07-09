@@ -1,3 +1,8 @@
 build
 mx.scratch
 !.settings
+.vscode
+._screen_debug_summary
+.tools
+.Assets/extflash
+.ref_u575_screen_color
