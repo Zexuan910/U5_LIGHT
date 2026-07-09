@@ -25,6 +25,8 @@
 #include <string.h>
 
 #include "DEV_Config.h"
+#include "gh3018_comm.h"
+#include "gh3018_hrspo2.h"
 #include "LCD_1in69.h"
 #include "cst816t.h"
 #include "imu_sensor.h"
@@ -56,6 +58,8 @@
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
+
+I2C_HandleTypeDef hi2c1;
 
 SPI_HandleTypeDef hspi1;
 I2C_HandleTypeDef hi2c2;
@@ -127,11 +131,13 @@ static UBYTE screen_locked = 0U;
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
+static void MX_I2C1_Init(void);
 static void MX_I2C2_Init(void);
 static void MX_I2C3_Init(void);
 #if LCD_USE_HAL_SPI
 static void MX_SPI1_Init(void);
 #endif
+static void MX_USART1_Debug_Init(void);
 /* USER CODE BEGIN PFP */
 static void LCD_ShowHelloBuaa(void);
 static void UI_ShowPage(UIPage page);
@@ -154,6 +160,7 @@ static void UI_ConfirmExerciseExit(uint32_t now_ms);
 static void UI_CheckAutoLock(uint32_t now_ms);
 static void LCD_FillRectByRows(UWORD x0, UWORD y0, UWORD x1, UWORD y1, UWORD color);
 static TouchSample Touch_ReadSample(void);
+static void PrintHrSpo2Snapshot(const char *tag, const Gh3018HrSpo2Snapshot *snapshot);
 
 /* USER CODE END PFP */
 
@@ -1540,11 +1547,13 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
+  MX_I2C1_Init();
   MX_I2C2_Init();
   MX_I2C3_Init();
 #if LCD_USE_HAL_SPI
   MX_SPI1_Init();
 #endif
+  MX_USART1_Debug_Init();
   /* USER CODE BEGIN 2 */
   if (DEV_Module_Init() != 0)
   {
@@ -1602,6 +1611,14 @@ int main(void)
   touch_last_active_ms = last_touch_ms;
   touch_down_ms = last_touch_ms;
   UI_ShowPage(ui_page);
+
+  printf("\r\nU575 wzx UI with health sensors validation start\r\n");
+  const Gh3018HrSpo2Snapshot *hrspo2 = Gh3018HrSpo2_Init();
+  PrintHrSpo2Snapshot("init", hrspo2);
+  uint32_t lastPollTick = HAL_GetTick();
+  uint32_t lastLogTick = HAL_GetTick();
+  Gh3018HrSpo2Status lastStatus = hrspo2->status;
+  uint32_t lastRefreshCount = hrspo2->resultRefreshCount;
 
   /* USER CODE END 2 */
 
@@ -1729,6 +1746,26 @@ int main(void)
 
     UI_CheckAutoLock(now_ms);
     touch_pressed_prev = touch_pressed;
+
+    uint8_t shouldLog = 0U;
+    if ((now_ms - lastPollTick) >= 50U)
+    {
+      lastPollTick = now_ms;
+      hrspo2 = Gh3018HrSpo2_Poll();
+      if ((hrspo2->status != lastStatus) ||
+          (hrspo2->resultRefreshCount != lastRefreshCount))
+      {
+        shouldLog = 1U;
+      }
+    }
+
+    if ((shouldLog != 0U) || ((now_ms - lastLogTick) >= 1000U))
+    {
+      PrintHrSpo2Snapshot("poll", hrspo2);
+      lastStatus = hrspo2->status;
+      lastRefreshCount = hrspo2->resultRefreshCount;
+      lastLogTick = now_ms;
+    }
     HAL_Delay(20U);
   }
   /* USER CODE END 3 */
@@ -1784,6 +1821,50 @@ void SystemClock_Config(void)
   {
     Error_Handler();
   }
+}
+
+/**
+  * @brief I2C1 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_I2C1_Init(void)
+{
+
+  /* USER CODE BEGIN I2C1_Init 0 */
+
+  /* USER CODE END I2C1_Init 0 */
+
+  /* USER CODE BEGIN I2C1_Init 1 */
+
+  /* USER CODE END I2C1_Init 1 */
+  hi2c1.Instance = I2C1;
+  hi2c1.Init.Timing = 0x00000E14;
+  hi2c1.Init.OwnAddress1 = 0;
+  hi2c1.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
+  hi2c1.Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;
+  hi2c1.Init.OwnAddress2 = 0;
+  hi2c1.Init.OwnAddress2Masks = I2C_OA2_NOMASK;
+  hi2c1.Init.GeneralCallMode = I2C_GENERALCALL_DISABLE;
+  hi2c1.Init.NoStretchMode = I2C_NOSTRETCH_DISABLE;
+  if (HAL_I2C_Init(&hi2c1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+  if (HAL_I2CEx_ConfigAnalogFilter(&hi2c1, I2C_ANALOGFILTER_ENABLE) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+  if (HAL_I2CEx_ConfigDigitalFilter(&hi2c1, 0) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN I2C1_Init 2 */
+
+  /* USER CODE END I2C1_Init 2 */
+
 }
 
 /**
@@ -1873,7 +1954,6 @@ static void MX_I2C3_Init(void)
   /* USER CODE END I2C3_Init 2 */
 
 }
-
 /**
   * @brief SPI1 Initialization Function
   * @param None
@@ -1949,12 +2029,29 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOA_CLK_ENABLE();
   __HAL_RCC_GPIOE_CLK_ENABLE();
   __HAL_RCC_GPIOC_CLK_ENABLE();
+  __HAL_RCC_GPIOD_CLK_ENABLE();
+
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(GH3018_RSTN_GPIO_Port, GH3018_RSTN_Pin, GPIO_PIN_SET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOE, LCD_RST_Pin|LCD_CS_Pin|LCD_DC_Pin|TP_RST_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(LCD_BLK_GPIO_Port, LCD_BLK_Pin, GPIO_PIN_RESET);
+
+  /*Configure GPIO pin : GH3018_RSTN_Pin */
+  GPIO_InitStruct.Pin = GH3018_RSTN_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GH3018_RSTN_GPIO_Port, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : GH3018_HBD_ON_Pin GH3018_INT_Pin */
+  GPIO_InitStruct.Pin = GH3018_HBD_ON_Pin|GH3018_INT_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
 
   /*Configure GPIO pin : MPU6050_INT_Pin */
   GPIO_InitStruct.Pin = MPU6050_INT_Pin;
@@ -1997,6 +2094,67 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+static void MX_USART1_Debug_Init(void)
+{
+  GPIO_InitTypeDef GPIO_InitStruct = {0};
+  uint32_t uartClockHz;
+
+  __HAL_RCC_GPIOA_CLK_ENABLE();
+  __HAL_RCC_USART1_CLK_ENABLE();
+
+  GPIO_InitStruct.Pin = GPIO_PIN_9|GPIO_PIN_10;
+  GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  GPIO_InitStruct.Alternate = GPIO_AF7_USART1;
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+  CLEAR_BIT(USART1->CR1, USART_CR1_UE);
+  USART1->CR1 = 0U;
+  USART1->CR2 = 0U;
+  USART1->CR3 = 0U;
+
+  uartClockHz = HAL_RCC_GetPCLK2Freq();
+  USART1->BRR = (uartClockHz + (115200U / 2U)) / 115200U;
+  SET_BIT(USART1->CR1, USART_CR1_TE | USART_CR1_RE | USART_CR1_UE);
+}
+
+int __io_putchar(int ch)
+{
+  while ((USART1->ISR & USART_ISR_TXE_TXFNF) == 0U) {
+  }
+  USART1->TDR = (uint8_t)ch;
+  return ch;
+}
+
+static void PrintHrSpo2Snapshot(const char *tag, const Gh3018HrSpo2Snapshot *snapshot)
+{
+  printf("[%s] status=%s comm=%d init=%d start=%d calc=%d int=%u pin_int=%u hbd_on=%u "
+         "poll=%lu calc_cnt=%lu refresh=%lu nodata=%lu raw_len=%u hr=%u hr_conf=%u "
+         "spo2=%u spo2_conf=%u wear=%u invalid=%ld i2c_w=%lu i2c_r=%lu\r\n",
+         tag,
+         Gh3018HrSpo2_StatusName(snapshot->status),
+         (int)snapshot->commStatus,
+         (int)snapshot->hbdSimpleInitRet,
+         (int)snapshot->hbdHrSpo2StartRet,
+         (int)snapshot->hbdCalcRet,
+         (unsigned int)snapshot->intStatus,
+         (unsigned int)snapshot->intLevel,
+         (unsigned int)snapshot->hbdOnLevel,
+         (unsigned long)snapshot->pollCount,
+         (unsigned long)snapshot->calcCount,
+         (unsigned long)snapshot->resultRefreshCount,
+         (unsigned long)snapshot->noDataCount,
+         (unsigned int)snapshot->rawDataLen,
+         (unsigned int)snapshot->heartRate,
+         (unsigned int)snapshot->heartRateConfidence,
+         (unsigned int)snapshot->spo2,
+         (unsigned int)snapshot->spo2Confidence,
+         (unsigned int)snapshot->wearingState,
+         (long)snapshot->spo2InvalidFlag,
+         (unsigned long)snapshot->i2cWriteCount,
+         (unsigned long)snapshot->i2cReadCount);
+}
 
 /* USER CODE END 4 */
 

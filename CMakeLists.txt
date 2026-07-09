@@ -53,6 +53,8 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     User/Motion/imu_sensor.c
     User/Motion/walk_metrics.c
     User/SelfTest/lcd_selftest.c
+    User/GH3018/gh3018_comm.c
+    User/GH3018/gh3018_hrspo2.c
     User/Touch/cst816t.c
     User/Touch/touch_controller.c
     User/UI/ui_asset_package.c
@@ -88,11 +90,13 @@ endif()
 
 # Add include paths
 target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
+    ${CMAKE_SOURCE_DIR}/Middlewares/GH30x/Inc
     User/Config
     User/Flash
     User/LCD
     User/Motion
     User/SelfTest
+    User/GH3018
     User/Touch
     User/UI
 )
@@ -109,6 +113,8 @@ list(REMOVE_ITEM CMAKE_C_IMPLICIT_LINK_LIBRARIES ob)
 # Add linked libraries
 target_link_libraries(${CMAKE_PROJECT_NAME}
     stm32cubemx
+    ${CMAKE_SOURCE_DIR}/Middlewares/GH30x/Lib/Cortex-M33/gcc/9.2.1-hard-fp/hbd_ctrl_GCC9.2.1_M33_hard-fp.a
+    m
 
     # Add user defined libraries
 )
