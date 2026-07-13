@@ -50,7 +50,11 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     User/Flash/ext_flash.c
     User/LCD/LCD_1in69.c
     User/LCD/lcd_port.c
+    User/Memory/eeprom.c
+    User/Memory/motion_log.c
+    User/Memory/psram.c
     User/Motion/imu_sensor.c
+    User/Motion/neai_walk_classifier.c
     User/Motion/walk_metrics.c
     User/SelfTest/lcd_selftest.c
     User/Touch/cst816t.c
@@ -58,6 +62,15 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     User/UI/ui_asset_package.c
     User/UI/ui_asset_programmer.c
     User/UI/ui_assets.c
+)
+
+# NanoEdge AI Studio 5.2 deployment library (Cortex-M33, hard-float, short enums).
+add_library(NanoEdgeAI STATIC IMPORTED GLOBAL)
+set_target_properties(NanoEdgeAI PROPERTIES
+    IMPORTED_LOCATION "${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty/NanoEdgeAI/libneai.a"
+)
+set_source_files_properties(User/Motion/neai_walk_classifier.c PROPERTIES
+    COMPILE_OPTIONS "-fshort-enums"
 )
 
 get_filename_component(ARM_TOOLCHAIN_BIN_DIR "${CMAKE_C_COMPILER}" DIRECTORY)
@@ -91,10 +104,12 @@ target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
     User/Config
     User/Flash
     User/LCD
+    User/Memory
     User/Motion
     User/SelfTest
     User/Touch
     User/UI
+    ThirdParty/NanoEdgeAI
 )
 
 # Add project symbols (macros)
@@ -109,6 +124,8 @@ list(REMOVE_ITEM CMAKE_C_IMPLICIT_LINK_LIBRARIES ob)
 # Add linked libraries
 target_link_libraries(${CMAKE_PROJECT_NAME}
     stm32cubemx
+    NanoEdgeAI
+    m
 
     # Add user defined libraries
 )

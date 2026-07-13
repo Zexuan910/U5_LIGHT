@@ -21,8 +21,8 @@ arm-none-eabi-gcc --version
 ninja --version
 ```
 
-项目脚本会优先使用系统 `PATH` 中的 CMake 和
-`STM32_Programmer_CLI.exe`，也能识别 STM32Cube 工具安装在
+项目脚本会优先使用系统 `PATH` 中的 CMake、Ninja、ARM GCC 和
+`STM32_Programmer_CLI.exe`，也能自动识别 STM32Cube 工具安装在
 `%LOCALAPPDATA%\stm32cube\bundles` 下的常见目录。
 
 ## 2. 获取代码

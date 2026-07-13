@@ -162,6 +162,60 @@ void HAL_SPI_MspDeInit(SPI_HandleTypeDef* hspi)
 
 }
 
+void HAL_OSPI_MspInit(OSPI_HandleTypeDef* hospi)
+{
+  GPIO_InitTypeDef GPIO_InitStruct = {0};
+  RCC_PeriphCLKInitTypeDef PeriphClkInit = {0};
+
+  if (hospi->Instance == OCTOSPI2)
+  {
+    PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_OSPI;
+    PeriphClkInit.OspiClockSelection = RCC_OSPICLKSOURCE_SYSCLK;
+    if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit) != HAL_OK)
+    {
+      Error_Handler();
+    }
+
+    __HAL_RCC_OSPIM_CLK_ENABLE();
+    __HAL_RCC_OSPI2_CLK_ENABLE();
+    __HAL_RCC_GPIOA_CLK_ENABLE();
+    __HAL_RCC_GPIOB_CLK_ENABLE();
+
+    GPIO_InitStruct.Pin = FLASH_CLK_Pin|FLASH_IO2_Pin|FLASH_IO3_Pin;
+    GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+    GPIO_InitStruct.Pull = GPIO_NOPULL;
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+    GPIO_InitStruct.Alternate = GPIO_AF10_OCTOSPI1;
+    HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+    GPIO_InitStruct.Pin = FLASH_IO0_Pin|FLASH_IO1_Pin;
+    GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+    GPIO_InitStruct.Pull = GPIO_NOPULL;
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+    GPIO_InitStruct.Alternate = GPIO_AF10_OCTOSPI1;
+    HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
+    GPIO_InitStruct.Pin = PSRAM_CS_Pin;
+    GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+    GPIO_InitStruct.Pull = GPIO_NOPULL;
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+    GPIO_InitStruct.Alternate = GPIO_AF5_OCTOSPI2;
+    HAL_GPIO_Init(PSRAM_CS_GPIO_Port, &GPIO_InitStruct);
+  }
+}
+
+void HAL_OSPI_MspDeInit(OSPI_HandleTypeDef* hospi)
+{
+  if (hospi->Instance == OCTOSPI2)
+  {
+    __HAL_RCC_OSPI2_CLK_DISABLE();
+    __HAL_RCC_OSPIM_CLK_DISABLE();
+
+    HAL_GPIO_DeInit(GPIOA, FLASH_CLK_Pin|FLASH_IO2_Pin|FLASH_IO3_Pin|PSRAM_CS_Pin);
+    HAL_GPIO_DeInit(GPIOB, FLASH_IO0_Pin|FLASH_IO1_Pin);
+  }
+}
+
 /**
   * @brief I2C MSP Initialization
   * This function configures the hardware resources used in this example
@@ -220,6 +274,30 @@ void HAL_I2C_MspInit(I2C_HandleTypeDef* hi2c)
 
     __HAL_RCC_I2C3_CLK_ENABLE();
   }
+
+  if (hi2c->Instance == I2C4)
+  {
+    PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_I2C4;
+    PeriphClkInit.I2c4ClockSelection = RCC_I2C4CLKSOURCE_PCLK1;
+    if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit) != HAL_OK)
+    {
+      Error_Handler();
+    }
+
+    __HAL_RCC_GPIOD_CLK_ENABLE();
+    /**I2C4 GPIO Configuration
+    PD12     ------> I2C4_SCL
+    PD13     ------> I2C4_SDA
+    */
+    GPIO_InitStruct.Pin = GPIO_PIN_12|GPIO_PIN_13;
+    GPIO_InitStruct.Mode = GPIO_MODE_AF_OD;
+    GPIO_InitStruct.Pull = GPIO_PULLUP;
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
+    GPIO_InitStruct.Alternate = GPIO_AF4_I2C4;
+    HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
+
+    __HAL_RCC_I2C4_CLK_ENABLE();
+  }
 }
 
 /**
@@ -239,6 +317,11 @@ void HAL_I2C_MspDeInit(I2C_HandleTypeDef* hi2c)
   {
     __HAL_RCC_I2C3_CLK_DISABLE();
     HAL_GPIO_DeInit(GPIOC, GPIO_PIN_0|GPIO_PIN_1);
+  }
+  else if (hi2c->Instance == I2C4)
+  {
+    __HAL_RCC_I2C4_CLK_DISABLE();
+    HAL_GPIO_DeInit(GPIOD, GPIO_PIN_12|GPIO_PIN_13);
   }
 }
 
