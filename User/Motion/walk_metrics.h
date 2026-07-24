@@ -16,6 +16,7 @@
 #define WALK_METRICS_DEBUG_EXPORT_BUSY  1U
 #define WALK_METRICS_DEBUG_EXPORT_READY 2U
 #define WALK_METRICS_DEBUG_EXPORT_ERROR 3U
+#define WALK_METRICS_DEBUG_CLEAR_COMMAND 0xFFFFFFFFUL
 
 #define WALK_METRICS_DEBUG_SESSION_ACTIVE   1U
 #define WALK_METRICS_DEBUG_SESSION_COMPLETE 2U
@@ -30,6 +31,12 @@ typedef struct
   float accel_g[3];
   float gyro_rad_s[3];
 } WalkMetricsImuSample;
+
+typedef enum
+{
+  WALK_METRICS_MODE_WALK = 0,
+  WALK_METRICS_MODE_RUN
+} WalkMetricsMode;
 
 typedef struct
 {
@@ -70,9 +77,11 @@ typedef struct
 typedef struct
 {
   uint8_t running;
+  uint8_t mode;
   uint8_t step_active;
   uint8_t gait_confirmed;
   uint8_t candidate_count;
+  uint8_t fast_walk;
   uint32_t start_tick_ms;
   uint32_t last_sample_tick_ms;
   uint32_t last_step_tick_ms;
@@ -107,14 +116,17 @@ extern volatile uint32_t g_walk_metrics_debug_storage_status;
 extern volatile uint32_t g_walk_metrics_debug_error_count;
 extern volatile uint32_t g_walk_metrics_debug_session_count;
 extern volatile uint32_t g_walk_metrics_debug_active_session_index;
+extern volatile uint32_t g_walk_metrics_flash_generation;
+extern volatile uint32_t g_walk_metrics_flash_recovery_count;
 extern volatile WalkMetricsDebugSession
   g_walk_metrics_debug_sessions[WALK_METRICS_DEBUG_MAX_SESSIONS];
 extern volatile WalkMetricsDebugExportControl g_walk_metrics_debug_export_control;
 extern uint8_t g_walk_metrics_debug_export_buffer[WALK_METRICS_DEBUG_EXPORT_BUFFER_BYTES];
 
 void WalkMetrics_Reset(WalkMetricsState* state);
-void WalkMetrics_Start(WalkMetricsState* state, uint32_t tick_ms);
+void WalkMetrics_Start(WalkMetricsState* state, uint32_t tick_ms, WalkMetricsMode mode);
 void WalkMetrics_Stop(WalkMetricsState* state);
+void WalkMetrics_SetFastWalk(WalkMetricsState* state, uint8_t fast_walk);
 void WalkMetrics_SuppressMotion(WalkMetricsState* state, uint32_t tick_ms,
                                 WalkMetricsOutput* output);
 void WalkMetrics_Update(WalkMetricsState* state, const WalkMetricsImuSample* sample, WalkMetricsOutput* output);

@@ -54,8 +54,11 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     User/Memory/motion_log.c
     User/Memory/psram.c
     User/Motion/imu_sensor.c
+    User/Motion/neai_run_classifier.c
     User/Motion/neai_walk_classifier.c
+    User/Motion/rope_metrics.c
     User/Motion/walk_metrics.c
+    User/Power/battery_monitor.c
     User/SelfTest/lcd_selftest.c
     User/Touch/cst816t.c
     User/Touch/touch_controller.c
@@ -69,7 +72,14 @@ add_library(NanoEdgeAI STATIC IMPORTED GLOBAL)
 set_target_properties(NanoEdgeAI PROPERTIES
     IMPORTED_LOCATION "${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty/NanoEdgeAI/libneai.a"
 )
-set_source_files_properties(User/Motion/neai_walk_classifier.c PROPERTIES
+add_library(NanoEdgeAIRun STATIC IMPORTED GLOBAL)
+set_target_properties(NanoEdgeAIRun PROPERTIES
+    IMPORTED_LOCATION "${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty/NanoEdgeAI_Run/libneai_run.a"
+)
+set_source_files_properties(
+    User/Motion/neai_run_classifier.c
+    User/Motion/neai_walk_classifier.c
+    PROPERTIES
     COMPILE_OPTIONS "-fshort-enums"
 )
 
@@ -106,10 +116,12 @@ target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
     User/LCD
     User/Memory
     User/Motion
+    User/Power
     User/SelfTest
     User/Touch
     User/UI
     ThirdParty/NanoEdgeAI
+    ThirdParty/NanoEdgeAI_Run
 )
 
 # Add project symbols (macros)
@@ -125,6 +137,7 @@ list(REMOVE_ITEM CMAKE_C_IMPLICIT_LINK_LIBRARIES ob)
 target_link_libraries(${CMAKE_PROJECT_NAME}
     stm32cubemx
     NanoEdgeAI
+    NanoEdgeAIRun
     m
 
     # Add user defined libraries

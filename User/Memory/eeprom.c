@@ -6,6 +6,9 @@
 #define EEPROM_I2C_ADDRESS_LAST 0x57U
 #define EEPROM_TRANSFER_TIMEOUT_MS 100U
 #define EEPROM_READY_TRIALS 12U
+#define EEPROM_WRITE_ATTEMPTS 3U
+#define EEPROM_WRITE_RETRY_DELAY_MS 2U
+#define EEPROM_WRITE_CYCLE_DELAY_MS 10U
 
 #define EEPROM_STATUS_NOT_INITIALIZED 0x45500000UL
 #define EEPROM_STATUS_OK 0x45504F4BUL
@@ -125,14 +128,34 @@ bool EEPROM_Write(uint16_t address, const void* data, uint16_t length)
     const uint16_t page_offset = address % EEPROM_PAGE_SIZE_BYTES;
     const uint16_t page_remaining = EEPROM_PAGE_SIZE_BYTES - page_offset;
     const uint16_t chunk = (length < page_remaining) ? length : page_remaining;
+    bool write_started = false;
 
-    if (HAL_I2C_Mem_Write(eeprom_i2c, eeprom_hal_address, address,
-                          I2C_MEMADD_SIZE_16BIT, (uint8_t*)source, chunk,
-                          EEPROM_TRANSFER_TIMEOUT_MS) != HAL_OK)
+    for (uint8_t attempt = 0U;
+         attempt < EEPROM_WRITE_ATTEMPTS;
+         attempt++)
+    {
+      if (HAL_I2C_Mem_Write(eeprom_i2c, eeprom_hal_address, address,
+                            I2C_MEMADD_SIZE_16BIT, (uint8_t*)source, chunk,
+                            EEPROM_TRANSFER_TIMEOUT_MS) == HAL_OK)
+      {
+        write_started = true;
+        break;
+      }
+      HAL_Delay(EEPROM_WRITE_RETRY_DELAY_MS);
+      (void)HAL_I2C_IsDeviceReady(eeprom_i2c, eeprom_hal_address,
+                                  EEPROM_READY_TRIALS, 1U);
+    }
+    if (!write_started)
     {
       g_eeprom_status = EEPROM_STATUS_IO_ERROR;
       return false;
     }
+    /*
+     * The board's M24C64 can acknowledge readiness before its internal page
+     * program cycle has fully released the next data write. Respect the
+     * specified write-cycle margin before ACK polling the following page.
+     */
+    HAL_Delay(EEPROM_WRITE_CYCLE_DELAY_MS);
     if (!EEPROM_WaitUntilReady())
     {
       return false;

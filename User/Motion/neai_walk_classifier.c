@@ -21,20 +21,23 @@ _Static_assert(NEAI_INPUT_SIGNAL_LENGTH == NEAI_WALK_WINDOW_SAMPLES,
                "NanoEdge AI signal length mismatch");
 _Static_assert(NEAI_INPUT_AXIS_NUMBER == NEAI_WALK_AXIS_COUNT,
                "NanoEdge AI axis count mismatch");
-_Static_assert(NEAI_NUMBER_OF_CLASSES == 2,
+_Static_assert(NEAI_NUMBER_OF_CLASSES == 3,
                "NanoEdge AI class count mismatch");
 
 volatile uint32_t g_neai_status = NEAI_STATUS_NOT_INITIALIZED;
 volatile uint32_t g_neai_inference_count = 0U;
 volatile uint16_t g_neai_walk_probability_x1000 = 0U;
+volatile uint16_t g_neai_fast_walk_probability_x1000 = 0U;
 volatile uint16_t g_neai_still_probability_x1000 = 0U;
 volatile uint16_t g_neai_window_samples = 0U;
 volatile int8_t g_neai_predicted_class = -1;
 volatile int8_t g_neai_walk_class_id = -1;
+volatile int8_t g_neai_fast_walk_class_id = -1;
 volatile uint8_t g_neai_last_state = (uint8_t)NEAI_NOT_INITIALIZED;
 volatile uint8_t g_neai_model_ready = 0U;
 volatile uint8_t g_neai_has_prediction = 0U;
 volatile uint8_t g_neai_walk_active = 1U;
+volatile uint8_t g_neai_fast_walk_active = 0U;
 
 static float neai_sample_window[NEAI_WALK_SIGNAL_VALUES];
 static float neai_inference_input[NEAI_WALK_SIGNAL_VALUES];
@@ -43,6 +46,8 @@ static uint16_t neai_sample_count = 0U;
 static uint16_t neai_samples_since_inference = 0U;
 static uint8_t neai_walk_streak = 0U;
 static uint8_t neai_still_streak = 0U;
+static uint8_t neai_fast_walk_streak = 0U;
+static uint8_t neai_normal_walk_streak = 0U;
 static int8_t neai_still_class_id = -1;
 
 static uint16_t NeaiWalkClassifier_ProbabilityX1000(float probability)
@@ -62,14 +67,18 @@ static void NeaiWalkClassifier_RunInference(void)
 {
   enum neai_state state;
   int predicted_class = -1;
+  float normal_walk_probability;
+  float fast_walk_probability;
   float walk_probability;
+  float predicted_probability;
   uint8_t raw_walk;
 
   memcpy(neai_inference_input, neai_sample_window, sizeof(neai_inference_input));
   state = neai_classification(neai_inference_input, neai_probabilities, &predicted_class);
   g_neai_last_state = (uint8_t)state;
   g_neai_inference_count++;
-  if (state != NEAI_OK)
+  if ((state != NEAI_OK) || (predicted_class < 0) ||
+      (predicted_class >= (int)NEAI_NUMBER_OF_CLASSES))
   {
     g_neai_status = NEAI_STATUS_MODEL_ERROR;
     g_neai_model_ready = 0U;
@@ -79,13 +88,21 @@ static void NeaiWalkClassifier_RunInference(void)
 
   g_neai_predicted_class = (int8_t)predicted_class;
   g_neai_has_prediction = 1U;
-  walk_probability = neai_probabilities[(uint8_t)g_neai_walk_class_id];
+  normal_walk_probability = neai_probabilities[(uint8_t)g_neai_walk_class_id];
+  fast_walk_probability = neai_probabilities[(uint8_t)g_neai_fast_walk_class_id];
+  walk_probability = (normal_walk_probability >= fast_walk_probability)
+                         ? normal_walk_probability
+                         : fast_walk_probability;
+  predicted_probability = neai_probabilities[(uint8_t)predicted_class];
   g_neai_walk_probability_x1000 = NeaiWalkClassifier_ProbabilityX1000(walk_probability);
+  g_neai_fast_walk_probability_x1000 =
+      NeaiWalkClassifier_ProbabilityX1000(fast_walk_probability);
   g_neai_still_probability_x1000 =
       NeaiWalkClassifier_ProbabilityX1000(neai_probabilities[(uint8_t)neai_still_class_id]);
 
-  raw_walk = ((predicted_class == g_neai_walk_class_id) &&
-              (walk_probability >= NEAI_WALK_CONFIDENCE_THRESHOLD)) ? 1U : 0U;
+  raw_walk = (((predicted_class == g_neai_walk_class_id) ||
+               (predicted_class == g_neai_fast_walk_class_id)) &&
+              (predicted_probability >= NEAI_WALK_CONFIDENCE_THRESHOLD)) ? 1U : 0U;
   if (raw_walk != 0U)
   {
     neai_still_streak = 0U;
@@ -97,10 +114,37 @@ static void NeaiWalkClassifier_RunInference(void)
     {
       g_neai_walk_active = 1U;
     }
+
+    if (predicted_class == g_neai_fast_walk_class_id)
+    {
+      neai_normal_walk_streak = 0U;
+      if (neai_fast_walk_streak < NEAI_WALK_CONFIRMATIONS)
+      {
+        neai_fast_walk_streak++;
+      }
+      if (neai_fast_walk_streak >= NEAI_WALK_CONFIRMATIONS)
+      {
+        g_neai_fast_walk_active = 1U;
+      }
+    }
+    else
+    {
+      neai_fast_walk_streak = 0U;
+      if (neai_normal_walk_streak < NEAI_WALK_CONFIRMATIONS)
+      {
+        neai_normal_walk_streak++;
+      }
+      if (neai_normal_walk_streak >= NEAI_WALK_CONFIRMATIONS)
+      {
+        g_neai_fast_walk_active = 0U;
+      }
+    }
   }
   else
   {
     neai_walk_streak = 0U;
+    neai_fast_walk_streak = 0U;
+    neai_normal_walk_streak = 0U;
     if (neai_still_streak < NEAI_WALK_CONFIRMATIONS)
     {
       neai_still_streak++;
@@ -108,6 +152,7 @@ static void NeaiWalkClassifier_RunInference(void)
     if (neai_still_streak >= NEAI_WALK_CONFIRMATIONS)
     {
       g_neai_walk_active = 0U;
+      g_neai_fast_walk_active = 0U;
     }
   }
 
@@ -121,6 +166,7 @@ bool NeaiWalkClassifier_Init(void)
   g_neai_status = NEAI_STATUS_NOT_INITIALIZED;
   g_neai_model_ready = 0U;
   g_neai_walk_class_id = -1;
+  g_neai_fast_walk_class_id = -1;
   neai_still_class_id = -1;
 
   if ((neai_get_input_signal_size() != (int)NEAI_WALK_WINDOW_SAMPLES) ||
@@ -139,13 +185,18 @@ bool NeaiWalkClassifier_Init(void)
     {
       g_neai_walk_class_id = (int8_t)class_id;
     }
+    else if ((class_name != NULL) && (strcmp(class_name, "fast_walk") == 0))
+    {
+      g_neai_fast_walk_class_id = (int8_t)class_id;
+    }
     else if ((class_name != NULL) && (strcmp(class_name, "still") == 0))
     {
       neai_still_class_id = (int8_t)class_id;
     }
   }
 
-  if ((g_neai_walk_class_id < 0) || (neai_still_class_id < 0))
+  if ((g_neai_walk_class_id < 0) || (g_neai_fast_walk_class_id < 0) ||
+      (neai_still_class_id < 0))
   {
     g_neai_status = NEAI_STATUS_CONFIG_ERROR;
     return false;
@@ -174,13 +225,17 @@ void NeaiWalkClassifier_Reset(void)
   neai_samples_since_inference = 0U;
   neai_walk_streak = 0U;
   neai_still_streak = 0U;
+  neai_fast_walk_streak = 0U;
+  neai_normal_walk_streak = 0U;
   g_neai_inference_count = 0U;
   g_neai_walk_probability_x1000 = 0U;
+  g_neai_fast_walk_probability_x1000 = 0U;
   g_neai_still_probability_x1000 = 0U;
   g_neai_window_samples = 0U;
   g_neai_predicted_class = -1;
   g_neai_has_prediction = 0U;
   g_neai_walk_active = 1U;
+  g_neai_fast_walk_active = 0U;
 }
 
 void NeaiWalkClassifier_PushSample(const float accel_g[3], const float gyro_rad_s[3])
@@ -243,6 +298,13 @@ uint8_t NeaiWalkClassifier_GetUiState(void)
   {
     return (uint8_t)NEAI_WALK_UI_WAIT;
   }
-  return (g_neai_walk_active != 0U) ? (uint8_t)NEAI_WALK_UI_WALK
-                                    : (uint8_t)NEAI_WALK_UI_STILL;
+  if (g_neai_walk_active == 0U)
+  {
+    return (uint8_t)NEAI_WALK_UI_STILL;
+  }
+  if (g_neai_fast_walk_active != 0U)
+  {
+    return (uint8_t)NEAI_WALK_UI_FAST_WALK;
+  }
+  return (uint8_t)NEAI_WALK_UI_WALK;
 }

@@ -89,6 +89,8 @@ void Error_Handler(void);
 #define FLASH_IO3_GPIO_Port GPIOA
 #define PSRAM_CS_Pin GPIO_PIN_12
 #define PSRAM_CS_GPIO_Port GPIOA
+#define BATTERY_ADC_Pin GPIO_PIN_2
+#define BATTERY_ADC_GPIO_Port GPIOC
 
 /* USER CODE BEGIN Private defines */
 

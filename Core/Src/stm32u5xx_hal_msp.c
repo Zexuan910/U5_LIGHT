@@ -76,6 +76,49 @@ void HAL_MspInit(void)
 }
 
 /**
+  * @brief ADC MSP Initialization
+  * @param hadc ADC handle pointer
+  * @retval None
+  */
+void HAL_ADC_MspInit(ADC_HandleTypeDef* hadc)
+{
+  GPIO_InitTypeDef GPIO_InitStruct = {0};
+  RCC_PeriphCLKInitTypeDef PeriphClkInit = {0};
+
+  if (hadc->Instance == ADC1)
+  {
+    PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_ADCDAC;
+    PeriphClkInit.AdcDacClockSelection = RCC_ADCDACCLKSOURCE_HCLK;
+    if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit) != HAL_OK)
+    {
+      Error_Handler();
+    }
+
+    __HAL_RCC_ADC12_CLK_ENABLE();
+    __HAL_RCC_GPIOC_CLK_ENABLE();
+
+    GPIO_InitStruct.Pin = BATTERY_ADC_Pin;
+    GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
+    GPIO_InitStruct.Pull = GPIO_NOPULL;
+    HAL_GPIO_Init(BATTERY_ADC_GPIO_Port, &GPIO_InitStruct);
+  }
+}
+
+/**
+  * @brief ADC MSP De-Initialization
+  * @param hadc ADC handle pointer
+  * @retval None
+  */
+void HAL_ADC_MspDeInit(ADC_HandleTypeDef* hadc)
+{
+  if (hadc->Instance == ADC1)
+  {
+    __HAL_RCC_ADC12_CLK_DISABLE();
+    HAL_GPIO_DeInit(BATTERY_ADC_GPIO_Port, BATTERY_ADC_Pin);
+  }
+}
+
+/**
   * @brief SPI MSP Initialization
   * This function configures the hardware resources used in this example
   * @param hspi: SPI handle pointer

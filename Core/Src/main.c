@@ -24,14 +24,16 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "battery_monitor.h"
 #include "DEV_Config.h"
 #include "LCD_1in69.h"
 #include "cst816t.h"
 #include "eeprom.h"
 #include "imu_sensor.h"
 #include "motion_log.h"
+#include "neai_run_classifier.h"
 #include "neai_walk_classifier.h"
-#include "psram.h"
+#include "rope_metrics.h"
 #include "touch_controller.h"
 #include "ui_asset_programmer.h"
 #include "ui_assets.h"
@@ -51,6 +53,7 @@
 #define UI_EXERCISE_TIME_SCALE_NUM 2UL
 #define UI_EXERCISE_TIME_SCALE_DEN 1UL
 #define UI_WALK_FIELD_INVALID 0xFFFFFFFFUL
+#define UI_BOOT_SPLASH_MS 3000UL
 
 /* USER CODE END PD */
 
@@ -62,6 +65,7 @@
 /* Private variables ---------------------------------------------------------*/
 
 SPI_HandleTypeDef hspi1;
+ADC_HandleTypeDef hadc1;
 I2C_HandleTypeDef hi2c2;
 I2C_HandleTypeDef hi2c3;
 I2C_HandleTypeDef hi2c4;
@@ -116,25 +120,37 @@ static uint32_t ui_sport_time_key[UI_SPORT_COUNT] = {0xFFFFFFFFUL, 0xFFFFFFFFUL,
 static UBYTE exercise_running[UI_SPORT_COUNT] = {0U, 0U, 0U};
 static WalkMetricsState walk_metrics_state;
 static WalkMetricsOutput walk_metrics_output;
-static uint8_t psram_ready = 0U;
+static WalkMetricsState run_metrics_state;
+static WalkMetricsOutput run_metrics_output;
+static RopeMetricsState rope_metrics_state;
+static RopeMetricsOutput rope_metrics_output;
 static uint32_t imu_recovery_tick_ms = 0U;
+static uint32_t motion_sample_tick_ms = 0U;
 static uint32_t ui_walk_distance_key = UI_WALK_FIELD_INVALID;
 static uint32_t ui_walk_now_speed_key = UI_WALK_FIELD_INVALID;
 static uint32_t ui_walk_avg_speed_key = UI_WALK_FIELD_INVALID;
 static uint32_t ui_walk_step_key = UI_WALK_FIELD_INVALID;
 static UBYTE ui_walk_ai_key = 0xFFU;
+static uint32_t ui_rope_count_key = UI_WALK_FIELD_INVALID;
+static uint32_t ui_rope_now_rate_key = UI_WALK_FIELD_INVALID;
+static uint32_t ui_rope_avg_rate_key = UI_WALK_FIELD_INVALID;
+static uint32_t ui_rope_peak_key = UI_WALK_FIELD_INVALID;
+static UBYTE ui_rope_status_key = 0xFFU;
 static UBYTE ui_exit_confirm_visible = 0U;
 static UIPage ui_exit_confirm_target = UI_PAGE_NAV;
 static UIClock ui_clock = {2026U, 7U, 7U, 12U, 30U, 0U, 2U};
 static uint32_t ui_clock_tick_ms = 0U;
 static uint32_t ui_home_clock_key = 0xFFFFFFFFUL;
+static uint32_t ui_battery_key = 0xFFFFFFFFUL;
 static UBYTE screen_locked = 0U;
 
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
+static void MX_PWR_Init(void);
 static void MX_GPIO_Init(void);
+static void MX_ADC1_Init(void);
 static void MX_I2C2_Init(void);
 static void MX_I2C3_Init(void);
 static void MX_I2C4_Init(void);
@@ -142,7 +158,7 @@ static void MX_I2C4_Init(void);
 static void MX_SPI1_Init(void);
 #endif
 /* USER CODE BEGIN PFP */
-static void LCD_ShowHelloBuaa(void);
+static void LCD_ShowHelloYqzh(void);
 static void UI_ShowPage(UIPage page);
 static void UI_ShowHome(void);
 static void UI_GotoPage(UIPage page);
@@ -150,15 +166,18 @@ static UBYTE UI_PageIsDetail(UIPage page);
 static void UI_ClockInit(uint32_t now_ms);
 static void UI_ClockUpdate(uint32_t now_ms);
 static void UI_UpdateHomeClock(UBYTE force);
+static void UI_UpdateBatteryIndicator(uint32_t now_ms, UBYTE force);
 static void UI_HandleTouchPressed(uint32_t now_ms, const TouchSample* sample);
 static void UI_HandleTouchReleased(uint32_t now_ms, uint32_t press_ms);
 static UBYTE UI_TryRealtimeSwipe(uint32_t now_ms);
 static void UI_DrawSportActionButton(UWORD accent);
 static void UI_UpdateSportTimer(uint32_t now_ms, UBYTE force);
-static void UI_UpdateWalkMetrics(uint32_t now_ms);
-static void UI_UpdateWalkDataDisplay(UBYTE force);
-static void UI_UpdateWalkAIField(UBYTE force);
-static void UI_SaveWalkSession(uint32_t duration_s);
+static void UI_UpdateMotionMetrics(uint32_t now_ms);
+static void UI_UpdateMotionDataDisplay(UBYTE force);
+static void UI_UpdateMotionStatusField(UBYTE force);
+static void UI_UpdateRopeDataDisplay(UBYTE force);
+static void UI_UpdateRopeStatusField(UBYTE force);
+static void UI_SaveMotionSession(UBYTE sport, uint32_t duration_s);
 static void UI_ShowExitConfirm(UIPage target);
 static void UI_HideExitConfirm(void);
 static void UI_ConfirmExerciseExit(uint32_t now_ms);
@@ -412,14 +431,14 @@ static void LCD_DrawCenteredTextInRect(UWORD x, UWORD y, UWORD w, const char* te
   LCD_DrawText(tx, y, text, color, bg_color, scale);
 }
 
-static void LCD_ShowHelloBuaa(void)
+static void LCD_ShowHelloYqzh(void)
 {
   UWORD bg_color = LCD_COLOR_WHITE;
 
   LCD_1IN69_FillRect_FastStatic(0U, 0U, (UWORD)(LCD_1IN69.WIDTH - 1U), (UWORD)(LCD_1IN69.HEIGHT - 1U), bg_color);
   LCD_1IN69_FillRect_FastStatic(0U, 0U, (UWORD)(LCD_1IN69.WIDTH - 1U), 7U, LCD_COLOR_BLACK);
   LCD_1IN69_FillRect_FastStatic(0U, 272U, (UWORD)(LCD_1IN69.WIDTH - 1U), (UWORD)(LCD_1IN69.HEIGHT - 1U), LCD_COLOR_BLACK);
-  LCD_DrawCenteredText("Hello BUAA", 126U, LCD_COLOR_BLACK, bg_color, 4U);
+  LCD_DrawCenteredText("Hello YQZH", 126U, LCD_COLOR_BLACK, bg_color, 4U);
 }
 
 static void LCD_FillRectByRows(UWORD x0, UWORD y0, UWORD x1, UWORD y1, UWORD color)
@@ -608,7 +627,68 @@ static void UI_UpdateHomeClock(UBYTE force)
     else
     {
       UI_ShowHome();
+      UI_UpdateBatteryIndicator(HAL_GetTick(), 1U);
     }
+  }
+}
+
+static void UI_DrawBatteryIndicator(void)
+{
+  char percent_text[6];
+  UWORD badge_bg = LCD_RGB565(5U, 13U, 26U);
+  UWORD outline = LCD_RGB565(238U, 244U, 255U);
+  UWORD fill = LCD_RGB565(63U, 212U, 122U);
+  UWORD muted = LCD_RGB565(120U, 134U, 150U);
+  UBYTE valid = BatteryMonitor_IsValid();
+  UBYTE percent = BatteryMonitor_GetPercent();
+  UWORD fill_width = 0U;
+
+  if (valid != 0U)
+  {
+    if (percent <= 15U)
+    {
+      fill = LCD_RGB565(244U, 74U, 74U);
+    }
+    else if (percent <= 35U)
+    {
+      fill = LCD_RGB565(255U, 190U, 60U);
+    }
+    fill_width = (UWORD)(((uint32_t)percent * 15UL + 99UL) / 100UL);
+    (void)snprintf(percent_text, sizeof(percent_text), "%u%%", (unsigned int)percent);
+  }
+  else
+  {
+    outline = muted;
+    (void)snprintf(percent_text, sizeof(percent_text), "--%%");
+  }
+
+  LCD_FillBox(168U, 10U, 62U, 20U, badge_bg);
+  LCD_FillBox(172U, 14U, 19U, 12U, outline);
+  LCD_FillBox(174U, 16U, 15U, 8U, badge_bg);
+  LCD_FillBox(191U, 17U, 3U, 6U, outline);
+  if (fill_width != 0U)
+  {
+    LCD_FillBox(174U, 16U, fill_width, 8U, fill);
+  }
+  LCD_DrawText(200U, 16U, percent_text, outline, badge_bg, 1U);
+}
+
+static void UI_UpdateBatteryIndicator(uint32_t now_ms, UBYTE force)
+{
+  uint32_t key;
+
+  if ((ui_page == UI_PAGE_LOCK) || (ui_exit_confirm_visible != 0U))
+  {
+    return;
+  }
+
+  BatteryMonitor_Update(now_ms);
+  key = (BatteryMonitor_IsValid() != 0U) ?
+        (0x100UL | (uint32_t)BatteryMonitor_GetPercent()) : 0UL;
+  if ((force != 0U) || (key != ui_battery_key))
+  {
+    UI_DrawBatteryIndicator();
+    ui_battery_key = key;
   }
 }
 
@@ -801,22 +881,25 @@ static void UI_UpdateSportTimer(uint32_t now_ms, UBYTE force)
   }
 }
 
-static void UI_UpdateWalkDataDisplay(UBYTE force)
+static void UI_UpdateMotionDataDisplay(UBYTE force)
 {
+  const WalkMetricsOutput* metrics;
   uint32_t distance_key;
   uint32_t now_speed_key;
   uint32_t avg_speed_key;
   uint32_t step_key;
 
-  if ((ui_page != UI_PAGE_WALK) || (ui_exit_confirm_visible != 0U))
+  if (((ui_page != UI_PAGE_WALK) && (ui_page != UI_PAGE_RUN)) ||
+      (ui_exit_confirm_visible != 0U))
   {
     return;
   }
 
-  distance_key = UI_WalkDistanceKey(walk_metrics_output.distance_m);
-  now_speed_key = UI_WalkSpeedKey(walk_metrics_output.instant_speed_mps);
-  avg_speed_key = UI_WalkSpeedKey(walk_metrics_output.average_speed_mps);
-  step_key = walk_metrics_output.step_count;
+  metrics = (ui_page == UI_PAGE_RUN) ? &run_metrics_output : &walk_metrics_output;
+  distance_key = UI_WalkDistanceKey(metrics->distance_m);
+  now_speed_key = UI_WalkSpeedKey(metrics->instant_speed_mps);
+  avg_speed_key = UI_WalkSpeedKey(metrics->average_speed_mps);
+  step_key = metrics->step_count;
 
   if ((force != 0U) || (distance_key != ui_walk_distance_key))
   {
@@ -838,54 +921,218 @@ static void UI_UpdateWalkDataDisplay(UBYTE force)
   }
 }
 
-static void UI_UpdateWalkAIField(UBYTE force)
+static void UI_UpdateMotionStatusField(UBYTE force)
 {
   UBYTE ai_state;
+  UBYTE status_key;
   const char* text;
   UWORD box1 = LCD_RGB565(16U, 91U, 118U);
   UWORD stat_text = LCD_RGB565(238U, 244U, 255U);
 
-  if ((ui_page != UI_PAGE_WALK) || (ui_exit_confirm_visible != 0U))
+  if (((ui_page != UI_PAGE_WALK) && (ui_page != UI_PAGE_RUN)) ||
+      (ui_exit_confirm_visible != 0U))
   {
     return;
   }
 
-  ai_state = NeaiWalkClassifier_GetUiState();
-  if ((force == 0U) && (ui_walk_ai_key == (UBYTE)ai_state))
+  if (ui_page == UI_PAGE_RUN)
   {
-    return;
-  }
-
-  if (ai_state == NEAI_WALK_UI_WALK)
-  {
-    text = "WALK";
-  }
-  else if (ai_state == NEAI_WALK_UI_STILL)
-  {
-    text = "STILL";
-  }
-  else if (ai_state == NEAI_WALK_UI_ERROR)
-  {
-    text = "ERR";
+    if (IMU_Sensor_IsReady() == false)
+    {
+      status_key = 0x82U;
+      text = "ERR";
+    }
+    else
+    {
+      ai_state = NeaiRunClassifier_GetUiState();
+      status_key = (UBYTE)(0x80U + ai_state);
+      if ((exercise_running[1] == 0U) &&
+          (ai_state != NEAI_RUN_UI_ERROR))
+      {
+        text = "READY";
+      }
+      else if (ai_state == NEAI_RUN_UI_RUN)
+      {
+        text = "RUN";
+      }
+      else if (ai_state == NEAI_RUN_UI_STILL)
+      {
+        text = "STILL";
+      }
+      else if (ai_state == NEAI_RUN_UI_ERROR)
+      {
+        text = "ERR";
+      }
+      else
+      {
+        text = "WAIT";
+      }
+    }
   }
   else
   {
-    text = "WAIT";
+    ai_state = NeaiWalkClassifier_GetUiState();
+    status_key = ai_state;
+    if (ai_state == NEAI_WALK_UI_WALK)
+    {
+      text = "WALK";
+    }
+    else if (ai_state == NEAI_WALK_UI_FAST_WALK)
+    {
+      text = "FAST";
+    }
+    else if (ai_state == NEAI_WALK_UI_STILL)
+    {
+      text = "STILL";
+    }
+    else if (ai_state == NEAI_WALK_UI_ERROR)
+    {
+      text = "ERR";
+    }
+    else
+    {
+      text = "WAIT";
+    }
+  }
+
+  if ((force == 0U) && (ui_walk_ai_key == status_key))
+  {
+    return;
   }
 
   LCD_FillBox(130U, 116U, 90U, 20U, box1);
   LCD_DrawCenteredTextInRectTransparent(124U, 119U, 104U, text, stat_text, 2U);
-  ui_walk_ai_key = (UBYTE)ai_state;
+  ui_walk_ai_key = status_key;
 }
 
-static void UI_UpdateWalkMetrics(uint32_t now_ms)
+static void UI_UpdateRopeDataDisplay(UBYTE force)
+{
+  char text[9];
+  uint32_t now_rate;
+  uint32_t avg_rate;
+  uint32_t peak_key;
+  UWORD stat_text = LCD_RGB565(238U, 244U, 255U);
+
+  if ((ui_page != UI_PAGE_ROPE) || (ui_exit_confirm_visible != 0U))
+  {
+    return;
+  }
+
+  now_rate = (rope_metrics_output.current_rate_x10 + 5U) / 10U;
+  avg_rate = (rope_metrics_output.average_rate_x10 + 5U) / 10U;
+  peak_key = rope_metrics_output.last_peak_gyro_x10;
+
+  if ((force != 0U) ||
+      (rope_metrics_output.jump_count != ui_rope_count_key))
+  {
+    UI_FormatWalkStep(rope_metrics_output.jump_count, text, sizeof(text));
+    UI_DrawSportMainField(text, "COUNT");
+    ui_rope_count_key = rope_metrics_output.jump_count;
+  }
+  if ((force != 0U) || (now_rate != ui_rope_now_rate_key))
+  {
+    (void)snprintf(text, sizeof(text), "%lu", (unsigned long)now_rate);
+    LCD_FillBox(20U, 195U, 42U, 16U, LCD_RGB565(22U, 104U, 63U));
+    LCD_DrawText(20U, 195U, text, stat_text,
+                 LCD_RGB565(22U, 104U, 63U), 1U);
+    ui_rope_now_rate_key = now_rate;
+  }
+  if ((force != 0U) || (avg_rate != ui_rope_avg_rate_key))
+  {
+    (void)snprintf(text, sizeof(text), "%lu", (unsigned long)avg_rate);
+    LCD_FillBox(93U, 195U, 48U, 16U, LCD_RGB565(128U, 72U, 29U));
+    LCD_DrawText(93U, 195U, text, stat_text,
+                 LCD_RGB565(128U, 72U, 29U), 1U);
+    ui_rope_avg_rate_key = avg_rate;
+  }
+  if ((force != 0U) || (peak_key != ui_rope_peak_key))
+  {
+    (void)snprintf(text, sizeof(text), "%lu.%lu",
+                   (unsigned long)(peak_key / 10U),
+                   (unsigned long)(peak_key % 10U));
+    LCD_FillBox(166U, 195U, 54U, 16U, LCD_RGB565(70U, 70U, 143U));
+    LCD_DrawText(166U, 195U, text, stat_text,
+                 LCD_RGB565(70U, 70U, 143U), 1U);
+    ui_rope_peak_key = peak_key;
+  }
+}
+
+static void UI_UpdateRopeStatusField(UBYTE force)
+{
+  UBYTE status_key;
+  const char* text;
+  UWORD box1 = LCD_RGB565(16U, 91U, 118U);
+  UWORD stat_text = LCD_RGB565(238U, 244U, 255U);
+
+  if ((ui_page != UI_PAGE_ROPE) || (ui_exit_confirm_visible != 0U))
+  {
+    return;
+  }
+
+  if (IMU_Sensor_IsReady() == false)
+  {
+    status_key = 2U;
+    text = "ERR";
+  }
+  else if (exercise_running[2] != 0U)
+  {
+    status_key = 1U;
+    text = "ROPE";
+  }
+  else
+  {
+    status_key = 0U;
+    text = "READY";
+  }
+
+  if ((force == 0U) && (ui_rope_status_key == status_key))
+  {
+    return;
+  }
+  LCD_FillBox(130U, 116U, 90U, 20U, box1);
+  LCD_DrawCenteredTextInRectTransparent(124U, 119U, 104U, text,
+                                       stat_text, 2U);
+  ui_rope_status_key = status_key;
+}
+
+static void UI_UpdateMotionMetrics(uint32_t now_ms)
 {
   IMU_SensorSample imu_sample;
   WalkMetricsImuSample walk_sample;
+  RopeMetricsImuSample rope_sample;
+  WalkMetricsState* metrics_state;
+  WalkMetricsOutput* metrics_output;
   uint16_t pending_samples;
   uint16_t samples_to_read;
+  UBYTE use_walk_ai;
+  UBYTE use_run_ai;
+  UBYTE use_rope;
 
-  if (exercise_running[0] == 0U)
+  if (exercise_running[0] != 0U)
+  {
+    metrics_state = &walk_metrics_state;
+    metrics_output = &walk_metrics_output;
+    use_walk_ai = 1U;
+    use_run_ai = 0U;
+    use_rope = 0U;
+  }
+  else if (exercise_running[1] != 0U)
+  {
+    metrics_state = &run_metrics_state;
+    metrics_output = &run_metrics_output;
+    use_walk_ai = 0U;
+    use_run_ai = 1U;
+    use_rope = 0U;
+  }
+  else if (exercise_running[2] != 0U)
+  {
+    metrics_state = NULL;
+    metrics_output = NULL;
+    use_walk_ai = 0U;
+    use_run_ai = 0U;
+    use_rope = 1U;
+  }
+  else
   {
     return;
   }
@@ -905,39 +1152,70 @@ static void UI_UpdateWalkMetrics(uint32_t now_ms)
 
   for (uint16_t sample_index = 0U; sample_index < samples_to_read; sample_index++)
   {
-    uint32_t samples_after = (uint32_t)(pending_samples - sample_index - 1U);
-
     if (!IMU_Sensor_Read(&imu_sample))
     {
       break;
     }
 
-    walk_sample.tick_ms = now_ms - (samples_after * 20U);
+    motion_sample_tick_ms += 20U;
+    walk_sample.tick_ms = motion_sample_tick_ms;
     WalkMetrics_DebugRecordRaw(walk_sample.tick_ms, imu_sample.raw_accel, imu_sample.raw_gyro);
     for (UBYTE i = 0U; i < 3U; i++)
     {
       walk_sample.accel_g[i] = imu_sample.accel_g[i];
       walk_sample.gyro_rad_s[i] = imu_sample.gyro_rad_s[i];
+      rope_sample.accel_g[i] = imu_sample.accel_g[i];
+      rope_sample.gyro_rad_s[i] = imu_sample.gyro_rad_s[i];
     }
+    rope_sample.tick_ms = walk_sample.tick_ms;
 
-    NeaiWalkClassifier_PushSample(walk_sample.accel_g, walk_sample.gyro_rad_s);
-    if (NeaiWalkClassifier_AllowStepDetection())
+    if (use_rope != 0U)
     {
-      WalkMetrics_Update(&walk_metrics_state, &walk_sample, &walk_metrics_output);
+      RopeMetrics_Update(&rope_metrics_state, &rope_sample,
+                         &rope_metrics_output);
+    }
+    else if (use_walk_ai != 0U)
+    {
+      NeaiWalkClassifier_PushSample(walk_sample.accel_g, walk_sample.gyro_rad_s);
+      WalkMetrics_SetFastWalk(
+        metrics_state,
+        (NeaiWalkClassifier_GetUiState() == NEAI_WALK_UI_FAST_WALK) ? 1U : 0U);
+      if (NeaiWalkClassifier_AllowStepDetection())
+      {
+        WalkMetrics_Update(metrics_state, &walk_sample, metrics_output);
+      }
+      else
+      {
+        WalkMetrics_SuppressMotion(metrics_state, walk_sample.tick_ms, metrics_output);
+      }
+    }
+    else if (use_run_ai != 0U)
+    {
+      NeaiRunClassifier_PushSample(walk_sample.accel_g,
+                                   walk_sample.gyro_rad_s);
+      if (NeaiRunClassifier_AllowMetrics())
+      {
+        WalkMetrics_Update(metrics_state, &walk_sample, metrics_output);
+      }
+      else
+      {
+        WalkMetrics_SuppressMotion(metrics_state, walk_sample.tick_ms,
+                                   metrics_output);
+      }
     }
     else
     {
-      WalkMetrics_SuppressMotion(&walk_metrics_state, walk_sample.tick_ms,
-                                 &walk_metrics_output);
+      WalkMetrics_Update(metrics_state, &walk_sample, metrics_output);
     }
   }
 }
 
-static void UI_SaveWalkSession(uint32_t duration_s)
+static void UI_SaveMotionSession(UBYTE sport, uint32_t duration_s)
 {
   MotionLogEntry entry;
-  float distance_m = walk_metrics_output.distance_m;
-  float average_speed_mps = walk_metrics_output.average_speed_mps;
+  const WalkMetricsOutput* metrics = NULL;
+  float distance_m = 0.0f;
+  float average_speed_mps = 0.0f;
   uint64_t cadence_x10;
 
   if (duration_s == 0U)
@@ -946,9 +1224,21 @@ static void UI_SaveWalkSession(uint32_t duration_s)
   }
 
   memset(&entry, 0, sizeof(entry));
-  entry.sport = MOTION_LOG_SPORT_WALK;
+  if (sport == 2U)
+  {
+    entry.sport = MOTION_LOG_SPORT_ROPE;
+    entry.steps = rope_metrics_output.jump_count;
+  }
+  else
+  {
+    metrics = (sport == 1U) ? &run_metrics_output : &walk_metrics_output;
+    distance_m = metrics->distance_m;
+    average_speed_mps = metrics->average_speed_mps;
+    entry.sport = (sport == 1U) ? MOTION_LOG_SPORT_RUN
+                                : MOTION_LOG_SPORT_WALK;
+    entry.steps = metrics->step_count;
+  }
   entry.duration_s = duration_s;
-  entry.steps = walk_metrics_output.step_count;
   if (distance_m > 0.0f)
   {
     entry.distance_cm = (distance_m >= 42949672.0f) ? UINT32_MAX
@@ -979,10 +1269,17 @@ static void UI_ToggleExercise(uint32_t now_ms)
   {
     exercise_elapsed_seconds[sport] = UI_ExerciseElapsedSeconds(now_ms);
     exercise_running[sport] = 0U;
-    if (sport == 0U)
+    UI_SaveMotionSession(sport, exercise_elapsed_seconds[sport]);
+    if (sport <= 1U)
     {
-      UI_SaveWalkSession(exercise_elapsed_seconds[sport]);
-      WalkMetrics_Stop(&walk_metrics_state);
+      WalkMetricsState* metrics_state = (sport == 1U) ? &run_metrics_state
+                                                       : &walk_metrics_state;
+      WalkMetrics_Stop(metrics_state);
+    }
+    else
+    {
+      RopeMetrics_Stop(&rope_metrics_state);
+      WalkMetrics_DebugEndSession(motion_sample_tick_ms);
     }
   }
   else
@@ -990,11 +1287,25 @@ static void UI_ToggleExercise(uint32_t now_ms)
     exercise_elapsed_seconds[sport] = 0U;
     exercise_start_ms[sport] = now_ms;
     exercise_running[sport] = 1U;
-    if (sport == 0U)
+    if (sport <= 1U)
     {
-      WalkMetrics_Start(&walk_metrics_state, now_ms);
-      NeaiWalkClassifier_Reset();
-      memset(&walk_metrics_output, 0, sizeof(walk_metrics_output));
+      WalkMetricsState* metrics_state = (sport == 1U) ? &run_metrics_state
+                                                       : &walk_metrics_state;
+      WalkMetricsOutput* metrics_output = (sport == 1U) ? &run_metrics_output
+                                                         : &walk_metrics_output;
+      WalkMetricsMode mode = (sport == 1U) ? WALK_METRICS_MODE_RUN
+                                            : WALK_METRICS_MODE_WALK;
+      motion_sample_tick_ms = now_ms;
+      WalkMetrics_Start(metrics_state, now_ms, mode);
+      if (sport == 0U)
+      {
+        NeaiWalkClassifier_Reset();
+      }
+      else
+      {
+        NeaiRunClassifier_Reset();
+      }
+      memset(metrics_output, 0, sizeof(*metrics_output));
       (void)IMU_Sensor_ResetFifo();
       ui_walk_distance_key = UI_WALK_FIELD_INVALID;
       ui_walk_now_speed_key = UI_WALK_FIELD_INVALID;
@@ -1002,11 +1313,27 @@ static void UI_ToggleExercise(uint32_t now_ms)
       ui_walk_step_key = UI_WALK_FIELD_INVALID;
       ui_walk_ai_key = 0xFFU;
     }
+    else
+    {
+      motion_sample_tick_ms = now_ms;
+      RopeMetrics_Start(&rope_metrics_state, now_ms);
+      memset(&rope_metrics_output, 0, sizeof(rope_metrics_output));
+      WalkMetrics_DebugBeginSession(now_ms);
+      (void)IMU_Sensor_ResetFifo();
+      ui_rope_count_key = UI_WALK_FIELD_INVALID;
+      ui_rope_now_rate_key = UI_WALK_FIELD_INVALID;
+      ui_rope_avg_rate_key = UI_WALK_FIELD_INVALID;
+      ui_rope_peak_key = UI_WALK_FIELD_INVALID;
+      ui_rope_status_key = 0xFFU;
+    }
   }
 
   UI_DrawSportActionButton(UI_CurrentSportAccent());
   UI_UpdateSportTimer(now_ms, 1U);
-  UI_UpdateWalkDataDisplay(1U);
+  UI_UpdateMotionDataDisplay(1U);
+  UI_UpdateMotionStatusField(1U);
+  UI_UpdateRopeDataDisplay(1U);
+  UI_UpdateRopeStatusField(1U);
 }
 
 static void UI_ShowExitConfirm(UIPage target)
@@ -1087,7 +1414,7 @@ static void UI_ShowHome(void)
     LCD_FillBox(168U, 126U, 24U, 22U, cloud);
   }
 
-  LCD_DrawTextTransparent(18U, 18U, "BUAA TEAM", LCD_COLOR_WHITE, 2U);
+  LCD_DrawTextTransparent(18U, 18U, "YQZH TEAM", LCD_COLOR_WHITE, 2U);
   UI_UpdateHomeClock(1U);
 }
 
@@ -1133,7 +1460,6 @@ static void UI_DrawSportDetail(const char* title_text, UWORD accent, const char*
 {
   UWORD bg = LCD_RGB565(5U, 13U, 26U);
   UWORD title = LCD_COLOR_BLACK;
-  UWORD heart = LCD_RGB565(130U, 18U, 18U);
   UWORD stat_text = LCD_RGB565(238U, 244U, 255U);
   UWORD stat_label = LCD_RGB565(142U, 158U, 178U);
   UWORD box0 = LCD_RGB565(18U, 44U, 82U);
@@ -1151,7 +1477,6 @@ static void UI_DrawSportDetail(const char* title_text, UWORD accent, const char*
   }
   LCD_FillBox(0U, 0U, 240U, 5U, accent);
   LCD_DrawTextTransparent(12U, 14U, title_text, title, 2U);
-  LCD_DrawTextTransparent(157U, 18U, "HR 146", heart, 1U);
   UI_DrawSportMainField(main_value, main_label);
 
   LCD_FillBox(12U, 110U, 104U, 58U, box0);
@@ -1196,23 +1521,32 @@ static void UI_ShowPage(UIPage page)
     UI_DrawSportDetail("WALK", LCD_RGB565(63U, 212U, 122U), "0.00", "KM",
                        "00:00", "WAIT", "0.0", "0.0", "0",
                        "TIME", "AI", "NOW", "AVG", "STEP");
-    UI_UpdateWalkDataDisplay(1U);
-    UI_UpdateWalkAIField(1U);
+    UI_UpdateMotionDataDisplay(1U);
+    UI_UpdateMotionStatusField(1U);
     break;
   case UI_PAGE_RUN:
-    UI_DrawSportDetail("RUN", LCD_RGB565(255U, 106U, 61U), "4.32", "KM",
-                       "00:26", "97%", "3.6", "2.9", "84",
-                       "TIME", "SPO2", "NOW", "AVG", "CAD");
+    UI_DrawSportDetail("RUN", LCD_RGB565(255U, 106U, 61U), "0.00", "KM",
+                       "00:00", "READY", "0.0", "0.0", "0",
+                       "TIME", "AI", "NOW", "AVG", "STEP");
+    UI_UpdateMotionDataDisplay(1U);
+    UI_UpdateMotionStatusField(1U);
     break;
   case UI_PAGE_ROPE:
-    UI_DrawSportDetail("ROPE", LCD_RGB565(108U, 140U, 255U), "860", "COUNT",
-                       "00:12", "98%", "72", "68", "95",
-                       "TIME", "SPO2", "NOW", "AVG", "KCAL");
+    UI_DrawSportDetail("ROPE", LCD_RGB565(108U, 140U, 255U), "0", "COUNT",
+                       "00:00", "READY", "0", "0", "0.0",
+                       "TIME", "IMU", "NOW", "AVG", "PEAK");
+    UI_UpdateRopeDataDisplay(1U);
+    UI_UpdateRopeStatusField(1U);
     break;
   case UI_PAGE_LOCK:
   default:
     UI_ShowLock();
     break;
+  }
+
+  if (page != UI_PAGE_LOCK)
+  {
+    UI_UpdateBatteryIndicator(HAL_GetTick(), 1U);
   }
 }
 
@@ -1577,8 +1911,14 @@ static void UI_HandleTouchReleased(uint32_t now_ms, uint32_t press_ms)
   {
     if (press_ms >= long_press_ms)
     {
-      ui_page = UI_PAGE_NAV;
-      UI_ShowPage(ui_page);
+      if (exercise_running[UI_CurrentSportIndex()] != 0U)
+      {
+        UI_ShowExitConfirm(UI_PAGE_NAV);
+      }
+      else
+      {
+        UI_GotoPage(UI_PAGE_NAV);
+      }
     }
   }
 }
@@ -1652,7 +1992,9 @@ int main(void)
   /* USER CODE END SysInit */
 
   /* Initialize all configured peripherals */
+  MX_PWR_Init();
   MX_GPIO_Init();
+  MX_ADC1_Init();
   MX_I2C2_Init();
   MX_I2C3_Init();
   MX_I2C4_Init();
@@ -1660,6 +2002,7 @@ int main(void)
   MX_SPI1_Init();
 #endif
   /* USER CODE BEGIN 2 */
+  (void)BatteryMonitor_Init(&hadc1);
   (void)EEPROM_Init(&hi2c4);
   (void)MotionLog_Init();
   if (DEV_Module_Init() != 0)
@@ -1668,8 +2011,13 @@ int main(void)
   }
   IMU_Sensor_Init();
   (void)NeaiWalkClassifier_Init();
+  (void)NeaiRunClassifier_Init();
   WalkMetrics_Reset(&walk_metrics_state);
   memset(&walk_metrics_output, 0, sizeof(walk_metrics_output));
+  WalkMetrics_Reset(&run_metrics_state);
+  memset(&run_metrics_output, 0, sizeof(run_metrics_output));
+  RopeMetrics_Reset(&rope_metrics_state);
+  memset(&rope_metrics_output, 0, sizeof(rope_metrics_output));
 
   LCD_1IN69_SetBackLight(1000U);
   LCD_1IN69_Init(VERTICAL);
@@ -1700,16 +2048,15 @@ int main(void)
   }
 #endif
   (void)UIAssets_Init();
-  LCD_ShowHelloBuaa();
+  LCD_ShowHelloYqzh();
   {
     uint32_t hello_start_ms = HAL_GetTick();
     (void)UIAssets_Preload();
-    while ((HAL_GetTick() - hello_start_ms) < 5000UL)
+    while ((HAL_GetTick() - hello_start_ms) < UI_BOOT_SPLASH_MS)
     {
       HAL_Delay(20U);
     }
   }
-  psram_ready = PSRAM_Init();
   WalkMetrics_DebugStorageInit();
   ui_page = UI_PAGE_HOME;
   selected_sport = 0U;
@@ -1736,12 +2083,16 @@ int main(void)
 
     /* USER CODE BEGIN 3 */
     UI_ClockUpdate(now_ms);
-    UI_UpdateWalkMetrics(now_ms);
+    UI_UpdateMotionMetrics(now_ms);
     WalkMetrics_DebugServiceExport();
+    MotionLog_ServiceControl();
     UI_UpdateHomeClock(0U);
+    UI_UpdateBatteryIndicator(now_ms, 0U);
     UI_UpdateSportTimer(now_ms, 0U);
-    UI_UpdateWalkDataDisplay(0U);
-    UI_UpdateWalkAIField(0U);
+    UI_UpdateMotionDataDisplay(0U);
+    UI_UpdateMotionStatusField(0U);
+    UI_UpdateRopeDataDisplay(0U);
+    UI_UpdateRopeStatusField(0U);
 
     if ((raw_touch_pressed != 0U) && (touch_sample.has_xy != 0U))
     {
@@ -1908,6 +2259,70 @@ void SystemClock_Config(void)
 }
 
 /**
+  * @brief PWR Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_PWR_Init(void)
+{
+  HAL_PWREx_EnableVddA();
+}
+
+/**
+  * @brief ADC1 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_ADC1_Init(void)
+{
+  ADC_ChannelConfTypeDef channel_config = {0};
+
+  hadc1.Instance = ADC1;
+  hadc1.Init.ClockPrescaler = ADC_CLOCK_ASYNC_DIV8;
+  hadc1.Init.Resolution = ADC_RESOLUTION_14B;
+  hadc1.Init.GainCompensation = 0U;
+  hadc1.Init.ScanConvMode = ADC_SCAN_DISABLE;
+  hadc1.Init.DataAlign = ADC_DATAALIGN_RIGHT;
+  hadc1.Init.EOCSelection = ADC_EOC_SINGLE_CONV;
+  hadc1.Init.LowPowerAutoWait = DISABLE;
+  hadc1.Init.LowPowerAutoPowerOff = ADC_LOW_POWER_NONE;
+  hadc1.Init.ContinuousConvMode = DISABLE;
+  hadc1.Init.NbrOfConversion = 1U;
+  hadc1.Init.DiscontinuousConvMode = DISABLE;
+  hadc1.Init.NbrOfDiscConversion = 1U;
+  hadc1.Init.ExternalTrigConv = ADC_SOFTWARE_START;
+  hadc1.Init.ExternalTrigConvEdge = ADC_EXTERNALTRIGCONVEDGE_NONE;
+  hadc1.Init.ConversionDataManagement = ADC_CONVERSIONDATA_DR;
+  hadc1.Init.DMAContinuousRequests = DISABLE;
+  hadc1.Init.Overrun = ADC_OVR_DATA_PRESERVED;
+  hadc1.Init.SamplingTimeCommon1 = ADC_SAMPLETIME_391CYCLES;
+  hadc1.Init.SamplingTimeCommon2 = ADC_SAMPLETIME_391CYCLES;
+  hadc1.Init.LeftBitShift = ADC_LEFTBITSHIFT_NONE;
+  hadc1.Init.OversamplingMode = DISABLE;
+  hadc1.Init.TriggerFrequencyMode = ADC_TRIGGER_FREQ_LOW;
+  hadc1.Init.VrefProtection = ADC_VREF_PPROT_NONE;
+  if (HAL_ADC_Init(&hadc1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+  channel_config.Channel = ADC_CHANNEL_3;
+  channel_config.Rank = ADC_REGULAR_RANK_1;
+  channel_config.SamplingTime = ADC_SAMPLETIME_391CYCLES;
+  channel_config.SingleDiff = ADC_SINGLE_ENDED;
+  channel_config.OffsetNumber = ADC_OFFSET_NONE;
+  channel_config.Offset = 0U;
+  channel_config.OffsetRightShift = DISABLE;
+  channel_config.OffsetSignedSaturation = DISABLE;
+  channel_config.OffsetSaturation = DISABLE;
+  channel_config.OffsetSign = ADC_OFFSET_SIGN_NEGATIVE;
+  if (HAL_ADC_ConfigChannel(&hadc1, &channel_config) != HAL_OK)
+  {
+    Error_Handler();
+  }
+}
+
+/**
   * @brief I2C2 Initialization Function
   * @param None
   * @retval None
@@ -2003,7 +2418,12 @@ static void MX_I2C3_Init(void)
 static void MX_I2C4_Init(void)
 {
   hi2c4.Instance = I2C4;
-  hi2c4.Init.Timing = 0x00000E14;
+  /*
+   * M24C64 EEPROM: use the proven 100 kHz timing at the current 80 MHz
+   * peripheral clock. The previous IMU-oriented fast timing could read the
+   * device but produced NACKs on EEPROM data bytes during writes.
+   */
+  hi2c4.Init.Timing = 0x10707DBC;
   hi2c4.Init.OwnAddress1 = 0;
   hi2c4.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
   hi2c4.Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;

@@ -43,9 +43,15 @@ volatile uint16_t g_motion_log_count = 0U;
 volatile uint32_t g_motion_log_next_sequence = 1UL;
 volatile uint8_t g_motion_log_latest_valid = 0U;
 volatile uint8_t g_motion_log_latest_raw[MOTION_LOG_EXPORT_RECORD_SIZE];
+volatile MotionLogClearControl g_motion_log_clear_control = {
+  0UL, 0UL, MOTION_LOG_CLEAR_IDLE
+};
+volatile uint16_t g_motion_log_clear_slot = 0U;
+volatile uint8_t g_motion_log_clear_error_stage = 0U;
 
 static uint16_t motion_log_next_slot = 0U;
 static bool motion_log_ready = false;
+static uint32_t motion_log_clear_active_request = 0U;
 
 static uint8_t MotionLog_Crc8(const uint8_t* data, uint16_t length)
 {
@@ -189,6 +195,116 @@ bool MotionLog_Init(void)
   motion_log_ready = true;
   g_motion_log_status = MOTION_LOG_STATUS_OK;
   return true;
+}
+
+bool MotionLog_ClearAll(void)
+{
+  MotionLogStoredRecord record;
+  MotionLogStoredRecord verify;
+  const uint16_t invalid_magic = 0U;
+
+  if ((!motion_log_ready) || (!EEPROM_IsReady()))
+  {
+    g_motion_log_status = MOTION_LOG_STATUS_EEPROM_UNAVAILABLE;
+    return false;
+  }
+
+  for (uint16_t slot = 0U; slot < MOTION_LOG_CAPACITY; slot++)
+  {
+    const uint16_t address =
+      (uint16_t)(slot * MOTION_LOG_RECORD_SIZE);
+    if (!MotionLog_ReadSlot(slot, &record))
+    {
+      g_motion_log_status = MOTION_LOG_STATUS_IO_ERROR;
+      return false;
+    }
+    if (record.magic == MOTION_LOG_MAGIC)
+    {
+      if ((!EEPROM_Write(address, &invalid_magic, sizeof(invalid_magic))) ||
+          (!MotionLog_ReadSlot(slot, &verify)) ||
+          (verify.magic == MOTION_LOG_MAGIC))
+      {
+        g_motion_log_status = MOTION_LOG_STATUS_IO_ERROR;
+        return false;
+      }
+    }
+  }
+
+  motion_log_next_slot = 0U;
+  g_motion_log_count = 0U;
+  g_motion_log_next_sequence = 1U;
+  MotionLog_ClearPublishedRecord();
+  g_motion_log_status = MOTION_LOG_STATUS_OK;
+  return true;
+}
+
+void MotionLog_ServiceControl(void)
+{
+  const uint32_t request_id = g_motion_log_clear_control.request_id;
+  MotionLogStoredRecord record;
+  MotionLogStoredRecord verify;
+  const uint16_t invalid_magic = 0U;
+
+  if ((request_id == 0U) ||
+      (request_id == g_motion_log_clear_control.completed_id))
+  {
+    return;
+  }
+
+  if (motion_log_clear_active_request != request_id)
+  {
+    motion_log_clear_active_request = request_id;
+    g_motion_log_clear_slot = 0U;
+    g_motion_log_clear_error_stage = 0U;
+    g_motion_log_clear_control.status = MOTION_LOG_CLEAR_BUSY;
+  }
+
+  /*
+   * Clear one EEPROM page per main-loop pass. Besides keeping the UI alive,
+   * this prevents debugger polling from stretching one long I2C transaction
+   * sequence past the HAL timeout.
+   */
+  if (g_motion_log_clear_slot < MOTION_LOG_CAPACITY)
+  {
+    const uint16_t address =
+      (uint16_t)(g_motion_log_clear_slot * MOTION_LOG_RECORD_SIZE);
+    if (!MotionLog_ReadSlot(g_motion_log_clear_slot, &record))
+    {
+      g_motion_log_clear_error_stage = 1U;
+    }
+    else if ((record.magic == MOTION_LOG_MAGIC) &&
+             (!EEPROM_Write(address, &invalid_magic,
+                            sizeof(invalid_magic))))
+    {
+      g_motion_log_clear_error_stage = 2U;
+    }
+    else if ((record.magic == MOTION_LOG_MAGIC) &&
+             ((!MotionLog_ReadSlot(g_motion_log_clear_slot, &verify)) ||
+              (verify.magic == MOTION_LOG_MAGIC)))
+    {
+      g_motion_log_clear_error_stage = 3U;
+    }
+
+    if (g_motion_log_clear_error_stage != 0U)
+    {
+      g_motion_log_status = MOTION_LOG_STATUS_IO_ERROR;
+      g_motion_log_clear_control.status = MOTION_LOG_CLEAR_ERROR;
+      g_motion_log_clear_control.completed_id = request_id;
+      motion_log_clear_active_request = 0U;
+      return;
+    }
+    g_motion_log_clear_slot++;
+    return;
+  }
+
+  motion_log_next_slot = 0U;
+  g_motion_log_count = 0U;
+  g_motion_log_next_sequence = 1U;
+  MotionLog_ClearPublishedRecord();
+  g_motion_log_status = MOTION_LOG_STATUS_OK;
+  g_motion_log_clear_control.status = MOTION_LOG_CLEAR_COMPLETE;
+  g_motion_log_clear_control.completed_id = request_id;
+  motion_log_clear_active_request = 0U;
 }
 
 bool MotionLog_Append(const MotionLogEntry* entry)

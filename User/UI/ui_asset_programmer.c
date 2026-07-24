@@ -23,6 +23,10 @@ uint8_t UIAssetProgrammer_Run(uint32_t* written_bytes)
         return 0U;
     }
 
+    if (g_ui_asset_package_size > EXT_FLASH_ASSET_PARTITION_BYTES) {
+        return 0U;
+    }
+
     sector_count = (g_ui_asset_package_size + UI_ASSET_SECTOR_SIZE - 1UL) / UI_ASSET_SECTOR_SIZE;
     for (sector = 0UL; sector < sector_count; sector++) {
         if (ExtFlash_Erase4K(UI_ASSET_BASE + (sector * UI_ASSET_SECTOR_SIZE)) == 0U) {
