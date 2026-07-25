@@ -38,6 +38,20 @@ add_executable(${CMAKE_PROJECT_NAME})
 # Add STM32CubeMX generated sources
 add_subdirectory(cmake/stm32cubemx)
 
+# Refresh the firmware's initial calendar time from the build computer before
+# compiling the application. The generated header stays inside the build tree.
+set(PC_TIME_GENERATED_DIR "${CMAKE_CURRENT_BINARY_DIR}/generated")
+set(PC_TIME_GENERATED_HEADER "${PC_TIME_GENERATED_DIR}/ui_pc_time.h")
+add_custom_target(generate_pc_time_header ALL
+    COMMAND "${CMAKE_COMMAND}"
+            "-DOUTPUT_FILE=${PC_TIME_GENERATED_HEADER}"
+            -P "${CMAKE_CURRENT_SOURCE_DIR}/tools/generate_pc_time_header.cmake"
+    BYPRODUCTS "${PC_TIME_GENERATED_HEADER}"
+    COMMENT "Generating firmware initial time from the build computer"
+    VERBATIM
+)
+add_dependencies(${CMAKE_PROJECT_NAME} generate_pc_time_header)
+
 # Link directories setup
 target_link_directories(${CMAKE_PROJECT_NAME} PRIVATE
     # Add user defined library search paths
@@ -61,6 +75,10 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     User/Motion/walk_metrics.c
     User/Power/battery_monitor.c
     User/SelfTest/lcd_selftest.c
+    User/GH3018/gh3018_comm.c
+    User/GH3018/gh3018_green_ppg_bpm.c
+    User/GH3018/gh3018_goodix_hrspo2.c
+    User/GH3018/gh3018_soft_i2c.c
     User/Touch/cst816t.c
     User/Touch/touch_controller.c
     User/UI/ui_asset_package.c
@@ -118,6 +136,8 @@ endif()
 
 # Add include paths
 target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
+    ${PC_TIME_GENERATED_DIR}
+    ${CMAKE_SOURCE_DIR}/Middlewares/GH30x/Inc
     User/Config
     User/Flash
     User/LCD
@@ -125,6 +145,7 @@ target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
     User/Motion
     User/Power
     User/SelfTest
+    User/GH3018
     User/Touch
     User/UI
     ThirdParty/NanoEdgeAI
@@ -147,6 +168,7 @@ target_link_libraries(${CMAKE_PROJECT_NAME}
     NanoEdgeAI
     NanoEdgeAIRope
     NanoEdgeAIRun
+    ${CMAKE_SOURCE_DIR}/Middlewares/GH30x/Lib/Cortex-M33/gcc/9.2.1-hard-fp/hbd_ctrl_GCC9.2.1_M33_hard-fp.a
     m
 
     # Add user defined libraries
