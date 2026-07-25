@@ -1,0 +1,45 @@
+if(NOT DEFINED OUTPUT_FILE OR OUTPUT_FILE STREQUAL "")
+    message(FATAL_ERROR "OUTPUT_FILE is required")
+endif()
+
+function(strip_leading_zero input output)
+    string(REGEX REPLACE "^0" "" value "${input}")
+    if(value STREQUAL "")
+        set(value "0")
+    endif()
+    set(${output} "${value}" PARENT_SCOPE)
+endfunction()
+
+string(TIMESTAMP pc_year "%Y")
+string(TIMESTAMP pc_month_padded "%m")
+string(TIMESTAMP pc_day_padded "%d")
+string(TIMESTAMP pc_hour_padded "%H")
+string(TIMESTAMP pc_minute_padded "%M")
+string(TIMESTAMP pc_second_padded "%S")
+string(TIMESTAMP pc_weekday "%w")
+
+strip_leading_zero("${pc_month_padded}" pc_month)
+strip_leading_zero("${pc_day_padded}" pc_day)
+strip_leading_zero("${pc_hour_padded}" pc_hour)
+strip_leading_zero("${pc_minute_padded}" pc_minute)
+strip_leading_zero("${pc_second_padded}" pc_second)
+
+get_filename_component(output_dir "${OUTPUT_FILE}" DIRECTORY)
+file(MAKE_DIRECTORY "${output_dir}")
+
+set(header_content "#ifndef UI_PC_TIME_H\n")
+string(APPEND header_content "#define UI_PC_TIME_H\n\n")
+string(APPEND header_content "/* Generated from the build computer's local time. */\n")
+string(APPEND header_content "#define UI_PC_TIME_YEAR ${pc_year}U\n")
+string(APPEND header_content "#define UI_PC_TIME_MONTH ${pc_month}U\n")
+string(APPEND header_content "#define UI_PC_TIME_DAY ${pc_day}U\n")
+string(APPEND header_content "#define UI_PC_TIME_HOUR ${pc_hour}U\n")
+string(APPEND header_content "#define UI_PC_TIME_MINUTE ${pc_minute}U\n")
+string(APPEND header_content "#define UI_PC_TIME_SECOND ${pc_second}U\n")
+string(APPEND header_content "#define UI_PC_TIME_WEEKDAY ${pc_weekday}U\n\n")
+string(APPEND header_content "#endif /* UI_PC_TIME_H */\n")
+
+file(WRITE "${OUTPUT_FILE}" "${header_content}")
+message(STATUS
+    "PC local time: ${pc_year}-${pc_month_padded}-${pc_day_padded} "
+    "${pc_hour_padded}:${pc_minute_padded}:${pc_second_padded}")

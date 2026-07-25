@@ -34,6 +34,7 @@
 #include "touch_controller.h"
 #include "ui_asset_programmer.h"
 #include "ui_assets.h"
+#include "ui_pc_time.h"
 #include "walk_metrics.h"
 
 /* USER CODE END Includes */
@@ -138,7 +139,15 @@ static uint32_t ui_walk_avg_speed_key = UI_WALK_FIELD_INVALID;
 static uint32_t ui_walk_step_key = UI_WALK_FIELD_INVALID;
 static UBYTE ui_exit_confirm_visible = 0U;
 static UIPage ui_exit_confirm_target = UI_PAGE_NAV;
-static UIClock ui_clock = {2026U, 7U, 7U, 12U, 30U, 0U, 2U};
+static UIClock ui_clock = {
+  (uint16_t)UI_PC_TIME_YEAR,
+  (UBYTE)UI_PC_TIME_MONTH,
+  (UBYTE)UI_PC_TIME_DAY,
+  (UBYTE)UI_PC_TIME_HOUR,
+  (UBYTE)UI_PC_TIME_MINUTE,
+  (UBYTE)UI_PC_TIME_SECOND,
+  (UBYTE)UI_PC_TIME_WEEKDAY
+};
 static uint32_t ui_clock_tick_ms = 0U;
 static uint32_t ui_home_clock_key = 0xFFFFFFFFUL;
 static uint32_t ui_home_battery_key = 0xFFFFFFFFUL;
@@ -2096,6 +2105,7 @@ int main(void)
       continue;
     }
 
+    /* Keep the clock moving before lock-screen branches can continue early. */
     UI_ClockUpdate(now_ms);
     UI_UpdateWalkMetrics(now_ms);
     UI_UpdateHomeClock(0U);
