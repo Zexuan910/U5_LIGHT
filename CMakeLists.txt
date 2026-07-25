@@ -38,6 +38,20 @@ add_executable(${CMAKE_PROJECT_NAME})
 # Add STM32CubeMX generated sources
 add_subdirectory(cmake/stm32cubemx)
 
+# Refresh the firmware's initial calendar time from the build computer before
+# compiling the application. The generated header stays inside the build tree.
+set(PC_TIME_GENERATED_DIR "${CMAKE_CURRENT_BINARY_DIR}/generated")
+set(PC_TIME_GENERATED_HEADER "${PC_TIME_GENERATED_DIR}/ui_pc_time.h")
+add_custom_target(generate_pc_time_header ALL
+    COMMAND "${CMAKE_COMMAND}"
+            "-DOUTPUT_FILE=${PC_TIME_GENERATED_HEADER}"
+            -P "${CMAKE_CURRENT_SOURCE_DIR}/tools/generate_pc_time_header.cmake"
+    BYPRODUCTS "${PC_TIME_GENERATED_HEADER}"
+    COMMENT "Generating firmware initial time from the build computer"
+    VERBATIM
+)
+add_dependencies(${CMAKE_PROJECT_NAME} generate_pc_time_header)
+
 # Link directories setup
 target_link_directories(${CMAKE_PROJECT_NAME} PRIVATE
     # Add user defined library search paths
@@ -92,6 +106,7 @@ endif()
 
 # Add include paths
 target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
+    ${PC_TIME_GENERATED_DIR}
     ${CMAKE_SOURCE_DIR}/Middlewares/GH30x/Inc
     User/Config
     User/Flash

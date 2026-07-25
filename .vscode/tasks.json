@@ -55,10 +55,6 @@
       "options": {
         "cwd": "${workspaceFolder}"
       },
-      "dependsOrder": "sequence",
-      "dependsOn": [
-        "Build Debug"
-      ],
       "group": {
         "kind": "build",
         "isDefault": true
@@ -86,10 +82,6 @@
       "options": {
         "cwd": "${workspaceFolder}"
       },
-      "dependsOrder": "sequence",
-      "dependsOn": [
-        "Build Debug"
-      ],
       "presentation": {
         "reveal": "always",
         "panel": "dedicated",
@@ -187,10 +179,6 @@
       "options": {
         "cwd": "${workspaceFolder}"
       },
-      "dependsOrder": "sequence",
-      "dependsOn": [
-        "Build Release"
-      ],
       "presentation": {
         "reveal": "always",
         "panel": "dedicated",
