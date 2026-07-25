@@ -38,8 +38,7 @@
 #define GH3018_GOODIX_HRSPO2_WEAR_OFF_DC_THRESHOLD_DIV 2000U
 #define GH3018_GOODIX_HRSPO2_BPM_MIN 40U
 #define GH3018_GOODIX_HRSPO2_BPM_MAX 150U
-#define GH3018_GOODIX_HRSPO2_SPO2_SIM_MIN_SWITCH_MS 1500U
-#define GH3018_GOODIX_HRSPO2_SPO2_SIM_SWITCH_SPAN_MS 2001U
+#define GH3018_GOODIX_HRSPO2_SPO2_SIM_SWITCH_MS 2000U
 #define GH3018_GOODIX_HRSPO2_WEAR_AGE_INVALID 0xFFFFFFFFU
 
 Gh3018GoodixHrSpo2Snapshot g_gh3018_goodix_hrspo2_snapshot;
@@ -492,7 +491,6 @@ static void Gh3018GoodixHrSpo2_ClearSpo2Sim(void)
 static void Gh3018GoodixHrSpo2_UpdateSpo2Sim(uint32_t now)
 {
     uint32_t randomValue;
-    uint32_t delayMs;
 
     if (g_gh3018_goodix_hrspo2_snapshot.ppgWearingState == 0U) {
         Gh3018GoodixHrSpo2_ClearSpo2Sim();
@@ -514,13 +512,8 @@ static void Gh3018GoodixHrSpo2_UpdateSpo2Sim(uint32_t now)
         g_gh3018_goodix_hrspo2_snapshot.spo2ValidLevel = 100;
         g_gh3018_goodix_hrspo2_snapshot.spo2RValue = 0U;
         g_gh3018_goodix_hrspo2_snapshot.spo2SimSwitchCount++;
-
-        randomValue = Gh3018GoodixHrSpo2_Spo2SimNextRandom();
-        delayMs =
-            GH3018_GOODIX_HRSPO2_SPO2_SIM_MIN_SWITCH_MS +
-            (randomValue %
-             GH3018_GOODIX_HRSPO2_SPO2_SIM_SWITCH_SPAN_MS);
-        s_spo2SimNextSwitchTick = now + delayMs;
+        s_spo2SimNextSwitchTick =
+            now + GH3018_GOODIX_HRSPO2_SPO2_SIM_SWITCH_MS;
     }
 
     g_gh3018_goodix_hrspo2_snapshot.spo2SimNextSwitchMs =

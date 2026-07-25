@@ -24,6 +24,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "battery_monitor.h"
 #include "DEV_Config.h"
 #include "gh3018_comm.h"
 #include "gh3018_goodix_hrspo2.h"
@@ -48,6 +49,7 @@
 #define UI_SPORT_COUNT 3U
 #define UI_EXERCISE_TIME_SCALE_NUM 2UL
 #define UI_EXERCISE_TIME_SCALE_DEN 1UL
+#define UI_BATTERY_DISPLAY_TOGGLE_MS 2000UL
 #define UI_WALK_FIELD_INVALID 0xFFFFFFFFUL
 #define GH3018_HRSPO2_POLL_INTERVAL_MS 50UL
 #define GH3018_HRSPO2_UI_REFRESH_MS 500UL
@@ -65,6 +67,7 @@
 
 /* Private variables ---------------------------------------------------------*/
 
+ADC_HandleTypeDef hadc1;
 SPI_HandleTypeDef hspi1;
 I2C_HandleTypeDef hi2c2;
 I2C_HandleTypeDef hi2c3;
@@ -138,6 +141,7 @@ static UIPage ui_exit_confirm_target = UI_PAGE_NAV;
 static UIClock ui_clock = {2026U, 7U, 7U, 12U, 30U, 0U, 2U};
 static uint32_t ui_clock_tick_ms = 0U;
 static uint32_t ui_home_clock_key = 0xFFFFFFFFUL;
+static uint32_t ui_home_battery_key = 0xFFFFFFFFUL;
 static UBYTE screen_locked = 0U;
 static uint32_t gh3018_last_poll_tick = 0U;
 static uint32_t ui_hrspo2_last_draw_tick = 0U;
@@ -147,6 +151,7 @@ static uint32_t ui_sport_health_last_draw_tick = 0U;
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
+static void MX_ADC1_Init(void);
 static void MX_GPIO_Init(void);
 static void MX_I2C2_Init(void);
 static void MX_I2C3_Init(void);
@@ -163,6 +168,7 @@ static UBYTE UI_PageIsDetail(UIPage page);
 static void UI_ClockInit(uint32_t now_ms);
 static void UI_ClockUpdate(uint32_t now_ms);
 static void UI_UpdateHomeClock(UBYTE force);
+static void UI_UpdateHomeBattery(UBYTE force);
 static void UI_HandleTouchPressed(uint32_t now_ms, const TouchSample* sample);
 static void UI_HandleTouchReleased(uint32_t now_ms, uint32_t press_ms);
 static UBYTE UI_TryRealtimeSwipe(uint32_t now_ms);
@@ -195,6 +201,9 @@ static void UI_UpdateHrSpo2Display(
 static void PrintHrSpo2Snapshot(
     const char *tag,
     const Gh3018GoodixHrSpo2Snapshot *snapshot);
+static void PrintBatterySnapshot(
+    const char *tag,
+    const BatteryMonitorSnapshot *snapshot);
 
 /* USER CODE END PFP */
 
@@ -640,6 +649,54 @@ static void UI_UpdateHomeClock(UBYTE force)
       UI_ShowHome();
     }
   }
+}
+
+static void UI_UpdateHomeBattery(UBYTE force)
+{
+  const BatteryMonitorSnapshot *battery = BatteryMonitor_GetSnapshot();
+  uint32_t show_mv = (HAL_GetTick() / UI_BATTERY_DISPLAY_TOGGLE_MS) & 1UL;
+  uint32_t key = 0xFFFFFFFFUL;
+  char text[16];
+  UWORD bg = LCD_RGB565(16U, 55U, 84U);
+  UWORD fg = LCD_RGB565(238U, 244U, 255U);
+
+  if (ui_page != UI_PAGE_HOME)
+  {
+    return;
+  }
+
+  if ((battery != NULL) && (battery->valid != 0U))
+  {
+    if (show_mv != 0UL)
+    {
+      key = 0x80000000UL | (battery->batteryMillivolts & 0x7FFFFFFFUL);
+      (void)snprintf(text,
+                     sizeof(text),
+                     "BAT %lumV",
+                     (unsigned long)battery->batteryMillivolts);
+    }
+    else
+    {
+      key = (uint32_t)battery->percent;
+      (void)snprintf(text, sizeof(text), "BAT %u%%", battery->percent);
+    }
+  }
+  else
+  {
+    key = (show_mv != 0UL) ? 0xFFFFFFFEUL : 0xFFFFFFFFUL;
+    (void)snprintf(text,
+                   sizeof(text),
+                   (show_mv != 0UL) ? "BAT --mV" : "BAT --%%");
+  }
+
+  if ((force == 0U) && (ui_home_battery_key == key))
+  {
+    return;
+  }
+
+  LCD_FillBox(152U, 18U, 72U, 18U, bg);
+  LCD_DrawText(160U, 24U, text, fg, bg, 1U);
+  ui_home_battery_key = key;
 }
 
 static UWORD UI_CurrentSportAccent(void)
@@ -1154,6 +1211,7 @@ static void UI_ShowHome(void)
 
   LCD_DrawTextTransparent(18U, 18U, "BUAA TEAM", LCD_COLOR_WHITE, 2U);
   UI_UpdateHomeClock(1U);
+  UI_UpdateHomeBattery(1U);
 }
 
 static void UI_ShowSportMenu(UBYTE selected)
@@ -1883,6 +1941,7 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
+  MX_ADC1_Init();
   MX_I2C2_Init();
   MX_I2C3_Init();
 #if LCD_USE_HAL_SPI
@@ -1897,6 +1956,8 @@ int main(void)
   IMU_Sensor_Init();
   WalkMetrics_Reset(&walk_metrics_state);
   memset(&walk_metrics_output, 0, sizeof(walk_metrics_output));
+  BatteryMonitor_Init(&hadc1);
+  (void)BatteryMonitor_Update(HAL_GetTick());
 
   LCD_1IN69_SetBackLight(1000U);
   LCD_1IN69_Init(VERTICAL);
@@ -1964,6 +2025,7 @@ int main(void)
   }
   PrintHrSpo2Snapshot("start", hrspo2);
   uint32_t lastLogTick = HAL_GetTick();
+  const BatteryMonitorSnapshot *battery = BatteryMonitor_GetSnapshot();
   Gh3018GoodixHrSpo2Status lastStatus = hrspo2->status;
   uint32_t lastResultRefreshCount = hrspo2->resultRefreshCount;
   uint8_t lastPpgHeartRate = hrspo2->ppgHeartRate;
@@ -1993,6 +2055,7 @@ int main(void)
     uint8_t shouldLog = 0U;
     if (GH3018_DIAGNOSTIC_SCREEN_ENABLE != 0U)
     {
+      battery = BatteryMonitor_Update(now_ms);
       hrspo2 = Gh3018GoodixHrSpo2Service_Update(now_ms, hrspo2);
       if ((hrspo2->status != lastStatus) ||
           (hrspo2->resultRefreshCount != lastResultRefreshCount) ||
@@ -2014,6 +2077,7 @@ int main(void)
       if ((shouldLog != 0U) || ((now_ms - lastLogTick) >= 1000U))
       {
         PrintHrSpo2Snapshot("hrspo2", hrspo2);
+        PrintBatterySnapshot("battery", battery);
         lastStatus = hrspo2->status;
         lastResultRefreshCount = hrspo2->resultRefreshCount;
         lastPpgHeartRate = hrspo2->ppgHeartRate;
@@ -2035,6 +2099,8 @@ int main(void)
     UI_ClockUpdate(now_ms);
     UI_UpdateWalkMetrics(now_ms);
     UI_UpdateHomeClock(0U);
+    battery = BatteryMonitor_Update(now_ms);
+    UI_UpdateHomeBattery(0U);
     UI_UpdateSportTimer(now_ms, 0U);
     UI_UpdateWalkDataDisplay(0U);
 
@@ -2058,6 +2124,7 @@ int main(void)
     if ((shouldLog != 0U) || ((now_ms - lastLogTick) >= 1000U))
     {
       PrintHrSpo2Snapshot("hrspo2", hrspo2);
+      PrintBatterySnapshot("battery", battery);
       lastStatus = hrspo2->status;
       lastResultRefreshCount = hrspo2->resultRefreshCount;
       lastPpgHeartRate = hrspo2->ppgHeartRate;
@@ -2233,6 +2300,77 @@ void SystemClock_Config(void)
   RCC_ClkInitStruct.APB3CLKDivider = RCC_HCLK_DIV1;
 
   if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_2) != HAL_OK)
+  {
+    Error_Handler();
+  }
+}
+
+/**
+  * @brief ADC1 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_ADC1_Init(void)
+{
+  ADC_ChannelConfTypeDef sConfig = {0};
+  RCC_PeriphCLKInitTypeDef PeriphClkInit = {0};
+
+  PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_ADCDAC;
+  PeriphClkInit.AdcDacClockSelection = RCC_ADCDACCLKSOURCE_HSI;
+  if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+  __HAL_RCC_ADC12_CLK_ENABLE();
+
+  hadc1.Instance = ADC1;
+  hadc1.Init.ClockPrescaler = ADC_CLOCK_ASYNC_DIV2;
+  hadc1.Init.Resolution = ADC_RESOLUTION_12B;
+  hadc1.Init.GainCompensation = 0U;
+  hadc1.Init.ScanConvMode = ADC_SCAN_DISABLE;
+  hadc1.Init.DataAlign = ADC_DATAALIGN_RIGHT;
+  hadc1.Init.EOCSelection = ADC_EOC_SINGLE_CONV;
+  hadc1.Init.LowPowerAutoWait = DISABLE;
+  hadc1.Init.LowPowerAutoPowerOff = ADC_LOW_POWER_NONE;
+  hadc1.Init.ContinuousConvMode = DISABLE;
+  hadc1.Init.NbrOfConversion = 1U;
+  hadc1.Init.DiscontinuousConvMode = DISABLE;
+  hadc1.Init.NbrOfDiscConversion = 1U;
+  hadc1.Init.ExternalTrigConv = ADC_SOFTWARE_START;
+  hadc1.Init.ExternalTrigConvEdge = ADC_EXTERNALTRIGCONVEDGE_NONE;
+  hadc1.Init.ConversionDataManagement = ADC_CONVERSIONDATA_DR;
+  hadc1.Init.DMAContinuousRequests = DISABLE;
+  hadc1.Init.Overrun = ADC_OVR_DATA_OVERWRITTEN;
+  hadc1.Init.SamplingTimeCommon1 = ADC_SAMPLETIME_814CYCLES;
+  hadc1.Init.SamplingTimeCommon2 = ADC_SAMPLETIME_814CYCLES;
+  hadc1.Init.LeftBitShift = ADC_LEFTBITSHIFT_NONE;
+  hadc1.Init.OversamplingMode = DISABLE;
+  hadc1.Init.TriggerFrequencyMode = ADC_TRIGGER_FREQ_LOW;
+  hadc1.Init.VrefProtection = ADC_VREF_PPROT_NONE;
+  if (HAL_ADC_Init(&hadc1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+  if (HAL_ADCEx_Calibration_Start(&hadc1,
+                                  ADC_CALIB_OFFSET,
+                                  ADC_SINGLE_ENDED) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+  sConfig.Channel = ADC_CHANNEL_3;
+  sConfig.Rank = ADC_REGULAR_RANK_1;
+  sConfig.SamplingTime = ADC_SAMPLETIME_814CYCLES;
+  sConfig.SingleDiff = ADC_SINGLE_ENDED;
+  sConfig.OffsetNumber = ADC_OFFSET_NONE;
+  sConfig.Offset = 0U;
+  sConfig.OffsetRightShift = DISABLE;
+  sConfig.OffsetSignedSaturation = DISABLE;
+  sConfig.OffsetSaturation = DISABLE;
+  sConfig.OffsetSign = ADC_OFFSET_SIGN_NEGATIVE;
+  if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
   {
     Error_Handler();
   }
@@ -2442,6 +2580,12 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(MPU6050_INT_GPIO_Port, &GPIO_InitStruct);
 
+  /*Configure GPIO pin : BAT_ADC_Pin */
+  GPIO_InitStruct.Pin = BAT_ADC_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(BAT_ADC_GPIO_Port, &GPIO_InitStruct);
+
   /*Configure GPIO pins : LCD_RST_Pin LCD_CS_Pin LCD_DC_Pin TP_RST_Pin */
   GPIO_InitStruct.Pin = LCD_RST_Pin|LCD_CS_Pin|LCD_DC_Pin|TP_RST_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
@@ -2473,6 +2617,28 @@ static void MX_GPIO_Init(void)
   /* USER CODE BEGIN MX_GPIO_Init_2 */
 
   /* USER CODE END MX_GPIO_Init_2 */
+}
+
+static void PrintBatterySnapshot(
+    const char *tag,
+    const BatteryMonitorSnapshot *snapshot)
+{
+  if (snapshot == NULL)
+  {
+    printf("[%s] battery snapshot null\r\n", tag);
+    return;
+  }
+
+  printf("[%s] valid=%u raw=%lu adc_mv=%lu bat_mv=%lu percent=%u samples=%lu err=%lu status=%d\r\n",
+         tag,
+         (unsigned int)snapshot->valid,
+         (unsigned long)snapshot->rawAdc,
+         (unsigned long)snapshot->adcMillivolts,
+         (unsigned long)snapshot->batteryMillivolts,
+         (unsigned int)snapshot->percent,
+         (unsigned long)snapshot->sampleCount,
+         (unsigned long)snapshot->errorCount,
+         (int)snapshot->lastStatus);
 }
 
 /* USER CODE BEGIN 4 */

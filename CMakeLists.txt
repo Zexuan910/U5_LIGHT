@@ -52,6 +52,7 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     User/LCD/lcd_port.c
     User/Motion/imu_sensor.c
     User/Motion/walk_metrics.c
+    User/Power/battery_monitor.c
     User/SelfTest/lcd_selftest.c
     User/GH3018/gh3018_comm.c
     User/GH3018/gh3018_green_ppg_bpm.c
@@ -97,6 +98,7 @@ target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
     User/Flash
     User/LCD
     User/Motion
+    User/Power
     User/SelfTest
     User/GH3018
     User/Touch
