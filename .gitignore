@@ -1,3 +1,16 @@
 build
 mx.scratch
 !.settings
+.vscode
+._screen_debug_summary
+.tools
+.Assets/extflash
+.ref_u575_screen_color
+
+# Local motion datasets and analysis exports are not required to build/flash.
+Dataset/
+output/
+NANOEDGE_DATA_COLLECTION.md
+NANOEDGE_EXPORT_CONVENTION.md
+tools/convert_walk_debug_to_neai.py
+tools/export_walk_dataset.ps1

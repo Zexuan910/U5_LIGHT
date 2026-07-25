@@ -1,0 +1,854 @@
+Dependencies for Project 'U575_SCREEN_COLOR', Target 'U575_SCREEN_COLOR': (DO NOT MODIFY !)
+CompilerVersion: 6210000::V6.21::ARMCLANG
+F (startup_stm32u575xx.s)(0x6A49C025)(--target=arm-arm-none-eabi -mcpu=cortex-m33 -mfpu=fpv5-sp-d16 -mfloat-abi=hard -masm=auto  -Wa,armasm,--diag_suppress=A1950W -c-gdwarf-4-I./RTE/_U575_SCREEN_COLOR-IC:/Users/Renton/AppData/Local/Arm/Packs/ARM/CMSIS/6.1.0/CMSIS/Core/Include-Wa,armasm,--pd,"__UVISION_VERSION SETA 539" -Wa,armasm,--pd,"_RTE_ SETA 1" -Wa,armasm,--pd,"STM32U575xx SETA 1" -Wa,armasm,--pd,"_RTE_ SETA 1"-o u575_screen_color/startup_stm32u575xx.o)
+F (../Core/Src/main.c)(0x6A4A2263)(-xc -std=c11 --target=arm-arm-none-eabi -mcpu=cortex-m33 -mfpu=fpv5-sp-d16 -mfloat-abi=hard -c-fno-rtti -funsigned-char -fshort-enums -fshort-wchar-gdwarf-4 -O3 -ffunction-sections -Wno-packed -Wno-missing-variable-declarations -Wno-missing-prototypes -Wno-missing-noreturn -Wno-sign-conversion -Wno-nonportable-include-path -Wno-reserved-id-macro -Wno-unused-macros -Wno-documentation-unknown-command -Wno-documentation -Wno-license-management -Wno-parentheses-equality -Wno-reserved-identifier -I ../Core/Inc -I ../Drivers/STM32U5xx_HAL_Driver/Inc -I ../Drivers/STM32U5xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32U5xx/Include -I ../Drivers/CMSIS/Include-I./RTE/_U575_SCREEN_COLOR-IC:/Users/Renton/AppData/Local/Arm/Packs/ARM/CMSIS/6.1.0/CMSIS/Core/Include-D__UVISION_VERSION="539" -D_RTE_ -DSTM32U575xx -D_RTE_ -DUSE_HAL_DRIVER -DSTM32U575xx-o u575_screen_color/main.o -MD)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal.h)(0x6A49BE02)
+I (..\Core\Inc\stm32u5xx_hal_conf.h)(0x6A436A0F)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_rcc.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_def.h)(0x6A49BE02)
+I (..\Drivers\CMSIS\Device\ST\STM32U5xx\Include\stm32u5xx.h)(0x6A49BE02)
+I (..\Drivers\CMSIS\Device\ST\STM32U5xx\Include\stm32u575xx.h)(0x6A49BE02)
+I (..\Drivers\CMSIS\Include\core_cm33.h)(0x6A49BE01)
+I (C:\Keil_v5\ARM\ARMCLANG\include\stdint.h)(0x6569B012)
+I (..\Drivers\CMSIS\Include\cmsis_version.h)(0x6A49BE01)
+I (..\Drivers\CMSIS\Include\cmsis_compiler.h)(0x6A49BE01)
+I (..\Drivers\CMSIS\Include\cmsis_armclang.h)(0x6A49BE01)
+I (..\Drivers\CMSIS\Include\mpu_armv8.h)(0x6A49BE01)
+I (..\Drivers\CMSIS\Device\ST\STM32U5xx\Include\system_stm32u5xx.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\Legacy\stm32_hal_legacy.h)(0x6A49BE02)
+I (C:\Keil_v5\ARM\ARMCLANG\include\stddef.h)(0x6569B012)
+I (C:\Keil_v5\ARM\ARMCLANG\include\math.h)(0x6569B012)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_rcc_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_gpio.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_gpio_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_icache.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_dma.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_dma_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_cortex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_flash.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_flash_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_pwr.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_pwr_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_spi.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_spi_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_exti.h)(0x6A49BE02)
+I (..\Core\Inc\icache.h_.\Core\Inc\main.hm.\Core\Inc\spi.h)(0x00000000)
+I (..\Core\Inc\gpio.h..\Core\Inc\lcd_selftest.he.\Core\Inc\LCD_1in69.h)(0x00000000)
+I (..\Core\Inc\DEV_Config.he.\Core\Inc\Debug.h)(0x00000000)
+I (C:\Keil_v5\ARM\ARMCLANG\include\stdio.h)(0x6569B012)
+I (C:\Keil_v5\ARM\ARMCLANG\include\stdlib.h)(0x6569B012)
+F (../Core/Src/gpio.c)(0x6A49FCAE)(-xc -std=c11 --target=arm-arm-none-eabi -mcpu=cortex-m33 -mfpu=fpv5-sp-d16 -mfloat-abi=hard -c-fno-rtti -funsigned-char -fshort-enums -fshort-wchar-gdwarf-4 -O3 -ffunction-sections -Wno-packed -Wno-missing-variable-declarations -Wno-missing-prototypes -Wno-missing-noreturn -Wno-sign-conversion -Wno-nonportable-include-path -Wno-reserved-id-macro -Wno-unused-macros -Wno-documentation-unknown-command -Wno-documentation -Wno-license-management -Wno-parentheses-equality -Wno-reserved-identifier -I ../Core/Inc -I ../Drivers/STM32U5xx_HAL_Driver/Inc -I ../Drivers/STM32U5xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32U5xx/Include -I ../Drivers/CMSIS/Include-I./RTE/_U575_SCREEN_COLOR-IC:/Users/Renton/AppData/Local/Arm/Packs/ARM/CMSIS/6.1.0/CMSIS/Core/Include-D__UVISION_VERSION="539" -D_RTE_ -DSTM32U575xx -D_RTE_ -DUSE_HAL_DRIVER -DSTM32U575xx-o u575_screen_color/gpio.o -MD)
+I (..\Core\Inc\main.hg.\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal.h)(0x00000000)
+I (..\Core\Inc\stm32u5xx_hal_conf.h)(0x6A436A0F)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_rcc.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_def.h)(0x6A49BE02)
+I (..\Drivers\CMSIS\Device\ST\STM32U5xx\Include\stm32u5xx.h)(0x6A49BE02)
+I (..\Drivers\CMSIS\Device\ST\STM32U5xx\Include\stm32u575xx.h)(0x6A49BE02)
+I (..\Drivers\CMSIS\Include\core_cm33.h)(0x6A49BE01)
+I (C:\Keil_v5\ARM\ARMCLANG\include\stdint.h)(0x6569B012)
+I (..\Drivers\CMSIS\Include\cmsis_version.h)(0x6A49BE01)
+I (..\Drivers\CMSIS\Include\cmsis_compiler.h)(0x6A49BE01)
+I (..\Drivers\CMSIS\Include\cmsis_armclang.h)(0x6A49BE01)
+I (..\Drivers\CMSIS\Include\mpu_armv8.h)(0x6A49BE01)
+I (..\Drivers\CMSIS\Device\ST\STM32U5xx\Include\system_stm32u5xx.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\Legacy\stm32_hal_legacy.h)(0x6A49BE02)
+I (C:\Keil_v5\ARM\ARMCLANG\include\stddef.h)(0x6569B012)
+I (C:\Keil_v5\ARM\ARMCLANG\include\math.h)(0x6569B012)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_rcc_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_gpio.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_gpio_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_icache.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_dma.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_dma_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_cortex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_flash.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_flash_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_pwr.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_pwr_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_spi.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_spi_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_exti.h)(0x6A49BE02)
+F (../Core/Src/icache.c)(0x6A422B5F)(-xc -std=c11 --target=arm-arm-none-eabi -mcpu=cortex-m33 -mfpu=fpv5-sp-d16 -mfloat-abi=hard -c-fno-rtti -funsigned-char -fshort-enums -fshort-wchar-gdwarf-4 -O3 -ffunction-sections -Wno-packed -Wno-missing-variable-declarations -Wno-missing-prototypes -Wno-missing-noreturn -Wno-sign-conversion -Wno-nonportable-include-path -Wno-reserved-id-macro -Wno-unused-macros -Wno-documentation-unknown-command -Wno-documentation -Wno-license-management -Wno-parentheses-equality -Wno-reserved-identifier -I ../Core/Inc -I ../Drivers/STM32U5xx_HAL_Driver/Inc -I ../Drivers/STM32U5xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32U5xx/Include -I ../Drivers/CMSIS/Include-I./RTE/_U575_SCREEN_COLOR-IC:/Users/Renton/AppData/Local/Arm/Packs/ARM/CMSIS/6.1.0/CMSIS/Core/Include-D__UVISION_VERSION="539" -D_RTE_ -DSTM32U575xx -D_RTE_ -DUSE_HAL_DRIVER -DSTM32U575xx-o u575_screen_color/icache.o -MD)
+I (..\Core\Inc\main.h..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal.h)(0x00000000)
+I (..\Core\Inc\stm32u5xx_hal_conf.h)(0x6A436A0F)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_rcc.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_def.h)(0x6A49BE02)
+I (..\Drivers\CMSIS\Device\ST\STM32U5xx\Include\stm32u5xx.h)(0x6A49BE02)
+I (..\Drivers\CMSIS\Device\ST\STM32U5xx\Include\stm32u575xx.h)(0x6A49BE02)
+I (..\Drivers\CMSIS\Include\core_cm33.h)(0x6A49BE01)
+I (C:\Keil_v5\ARM\ARMCLANG\include\stdint.h)(0x6569B012)
+I (..\Drivers\CMSIS\Include\cmsis_version.h)(0x6A49BE01)
+I (..\Drivers\CMSIS\Include\cmsis_compiler.h)(0x6A49BE01)
+I (..\Drivers\CMSIS\Include\cmsis_armclang.h)(0x6A49BE01)
+I (..\Drivers\CMSIS\Include\mpu_armv8.h)(0x6A49BE01)
+I (..\Drivers\CMSIS\Device\ST\STM32U5xx\Include\system_stm32u5xx.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\Legacy\stm32_hal_legacy.h)(0x6A49BE02)
+I (C:\Keil_v5\ARM\ARMCLANG\include\stddef.h)(0x6569B012)
+I (C:\Keil_v5\ARM\ARMCLANG\include\math.h)(0x6569B012)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_rcc_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_gpio.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_gpio_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_icache.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_dma.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_dma_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_cortex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_flash.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_flash_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_pwr.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_pwr_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_spi.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_spi_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_exti.h)(0x6A49BE02)
+F (../Core/Src/spi.c)(0x6A4A011C)(-xc -std=c11 --target=arm-arm-none-eabi -mcpu=cortex-m33 -mfpu=fpv5-sp-d16 -mfloat-abi=hard -c-fno-rtti -funsigned-char -fshort-enums -fshort-wchar-gdwarf-4 -O3 -ffunction-sections -Wno-packed -Wno-missing-variable-declarations -Wno-missing-prototypes -Wno-missing-noreturn -Wno-sign-conversion -Wno-nonportable-include-path -Wno-reserved-id-macro -Wno-unused-macros -Wno-documentation-unknown-command -Wno-documentation -Wno-license-management -Wno-parentheses-equality -Wno-reserved-identifier -I ../Core/Inc -I ../Drivers/STM32U5xx_HAL_Driver/Inc -I ../Drivers/STM32U5xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32U5xx/Include -I ../Drivers/CMSIS/Include-I./RTE/_U575_SCREEN_COLOR-IC:/Users/Renton/AppData/Local/Arm/Packs/ARM/CMSIS/6.1.0/CMSIS/Core/Include-D__UVISION_VERSION="539" -D_RTE_ -DSTM32U575xx -D_RTE_ -DUSE_HAL_DRIVER -DSTM32U575xx-o u575_screen_color/spi.o -MD)
+I (..\Core\Inc\main.h..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal.h)(0x00000000)
+I (..\Core\Inc\stm32u5xx_hal_conf.h)(0x6A436A0F)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_rcc.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_def.h)(0x6A49BE02)
+I (..\Drivers\CMSIS\Device\ST\STM32U5xx\Include\stm32u5xx.h)(0x6A49BE02)
+I (..\Drivers\CMSIS\Device\ST\STM32U5xx\Include\stm32u575xx.h)(0x6A49BE02)
+I (..\Drivers\CMSIS\Include\core_cm33.h)(0x6A49BE01)
+I (C:\Keil_v5\ARM\ARMCLANG\include\stdint.h)(0x6569B012)
+I (..\Drivers\CMSIS\Include\cmsis_version.h)(0x6A49BE01)
+I (..\Drivers\CMSIS\Include\cmsis_compiler.h)(0x6A49BE01)
+I (..\Drivers\CMSIS\Include\cmsis_armclang.h)(0x6A49BE01)
+I (..\Drivers\CMSIS\Include\mpu_armv8.h)(0x6A49BE01)
+I (..\Drivers\CMSIS\Device\ST\STM32U5xx\Include\system_stm32u5xx.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\Legacy\stm32_hal_legacy.h)(0x6A49BE02)
+I (C:\Keil_v5\ARM\ARMCLANG\include\stddef.h)(0x6569B012)
+I (C:\Keil_v5\ARM\ARMCLANG\include\math.h)(0x6569B012)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_rcc_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_gpio.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_gpio_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_icache.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_dma.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_dma_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_cortex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_flash.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_flash_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_pwr.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_pwr_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_spi.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_spi_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_exti.h)(0x6A49BE02)
+F (../Core/Src/stm32u5xx_it.c)(0x6A422A06)(-xc -std=c11 --target=arm-arm-none-eabi -mcpu=cortex-m33 -mfpu=fpv5-sp-d16 -mfloat-abi=hard -c-fno-rtti -funsigned-char -fshort-enums -fshort-wchar-gdwarf-4 -O3 -ffunction-sections -Wno-packed -Wno-missing-variable-declarations -Wno-missing-prototypes -Wno-missing-noreturn -Wno-sign-conversion -Wno-nonportable-include-path -Wno-reserved-id-macro -Wno-unused-macros -Wno-documentation-unknown-command -Wno-documentation -Wno-license-management -Wno-parentheses-equality -Wno-reserved-identifier -I ../Core/Inc -I ../Drivers/STM32U5xx_HAL_Driver/Inc -I ../Drivers/STM32U5xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32U5xx/Include -I ../Drivers/CMSIS/Include-I./RTE/_U575_SCREEN_COLOR-IC:/Users/Renton/AppData/Local/Arm/Packs/ARM/CMSIS/6.1.0/CMSIS/Core/Include-D__UVISION_VERSION="539" -D_RTE_ -DSTM32U575xx -D_RTE_ -DUSE_HAL_DRIVER -DSTM32U575xx-o u575_screen_color/stm32u5xx_it.o -MD)
+I (..\Core\Inc\main.h5.\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal.h)(0x00000000)
+I (..\Core\Inc\stm32u5xx_hal_conf.h)(0x6A436A0F)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_rcc.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_def.h)(0x6A49BE02)
+I (..\Drivers\CMSIS\Device\ST\STM32U5xx\Include\stm32u5xx.h)(0x6A49BE02)
+I (..\Drivers\CMSIS\Device\ST\STM32U5xx\Include\stm32u575xx.h)(0x6A49BE02)
+I (..\Drivers\CMSIS\Include\core_cm33.h)(0x6A49BE01)
+I (C:\Keil_v5\ARM\ARMCLANG\include\stdint.h)(0x6569B012)
+I (..\Drivers\CMSIS\Include\cmsis_version.h)(0x6A49BE01)
+I (..\Drivers\CMSIS\Include\cmsis_compiler.h)(0x6A49BE01)
+I (..\Drivers\CMSIS\Include\cmsis_armclang.h)(0x6A49BE01)
+I (..\Drivers\CMSIS\Include\mpu_armv8.h)(0x6A49BE01)
+I (..\Drivers\CMSIS\Device\ST\STM32U5xx\Include\system_stm32u5xx.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\Legacy\stm32_hal_legacy.h)(0x6A49BE02)
+I (C:\Keil_v5\ARM\ARMCLANG\include\stddef.h)(0x6569B012)
+I (C:\Keil_v5\ARM\ARMCLANG\include\math.h)(0x6569B012)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_rcc_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_gpio.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_gpio_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_icache.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_dma.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_dma_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_cortex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_flash.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_flash_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_pwr.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_pwr_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_spi.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_spi_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_exti.h)(0x6A49BE02)
+I (..\Core\Inc\stm32u5xx_it.h)(0x6A422A07)
+F (../Core/Src/stm32u5xx_hal_msp.c)(0x6A422A07)(-xc -std=c11 --target=arm-arm-none-eabi -mcpu=cortex-m33 -mfpu=fpv5-sp-d16 -mfloat-abi=hard -c-fno-rtti -funsigned-char -fshort-enums -fshort-wchar-gdwarf-4 -O3 -ffunction-sections -Wno-packed -Wno-missing-variable-declarations -Wno-missing-prototypes -Wno-missing-noreturn -Wno-sign-conversion -Wno-nonportable-include-path -Wno-reserved-id-macro -Wno-unused-macros -Wno-documentation-unknown-command -Wno-documentation -Wno-license-management -Wno-parentheses-equality -Wno-reserved-identifier -I ../Core/Inc -I ../Drivers/STM32U5xx_HAL_Driver/Inc -I ../Drivers/STM32U5xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32U5xx/Include -I ../Drivers/CMSIS/Include-I./RTE/_U575_SCREEN_COLOR-IC:/Users/Renton/AppData/Local/Arm/Packs/ARM/CMSIS/6.1.0/CMSIS/Core/Include-D__UVISION_VERSION="539" -D_RTE_ -DSTM32U575xx -D_RTE_ -DUSE_HAL_DRIVER -DSTM32U575xx-o u575_screen_color/stm32u5xx_hal_msp.o -MD)
+I (..\Core\Inc\main.h5.\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal.h)(0x00000000)
+I (..\Core\Inc\stm32u5xx_hal_conf.h)(0x6A436A0F)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_rcc.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_def.h)(0x6A49BE02)
+I (..\Drivers\CMSIS\Device\ST\STM32U5xx\Include\stm32u5xx.h)(0x6A49BE02)
+I (..\Drivers\CMSIS\Device\ST\STM32U5xx\Include\stm32u575xx.h)(0x6A49BE02)
+I (..\Drivers\CMSIS\Include\core_cm33.h)(0x6A49BE01)
+I (C:\Keil_v5\ARM\ARMCLANG\include\stdint.h)(0x6569B012)
+I (..\Drivers\CMSIS\Include\cmsis_version.h)(0x6A49BE01)
+I (..\Drivers\CMSIS\Include\cmsis_compiler.h)(0x6A49BE01)
+I (..\Drivers\CMSIS\Include\cmsis_armclang.h)(0x6A49BE01)
+I (..\Drivers\CMSIS\Include\mpu_armv8.h)(0x6A49BE01)
+I (..\Drivers\CMSIS\Device\ST\STM32U5xx\Include\system_stm32u5xx.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\Legacy\stm32_hal_legacy.h)(0x6A49BE02)
+I (C:\Keil_v5\ARM\ARMCLANG\include\stddef.h)(0x6569B012)
+I (C:\Keil_v5\ARM\ARMCLANG\include\math.h)(0x6569B012)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_rcc_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_gpio.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_gpio_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_icache.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_dma.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_dma_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_cortex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_flash.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_flash_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_pwr.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_pwr_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_spi.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_spi_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_exti.h)(0x6A49BE02)
+F (..\Core\Src\DEV_Config.c)(0x6A49D244)(-xc -std=c11 --target=arm-arm-none-eabi -mcpu=cortex-m33 -mfpu=fpv5-sp-d16 -mfloat-abi=hard -c-fno-rtti -funsigned-char -fshort-enums -fshort-wchar-gdwarf-4 -O3 -ffunction-sections -Wno-packed -Wno-missing-variable-declarations -Wno-missing-prototypes -Wno-missing-noreturn -Wno-sign-conversion -Wno-nonportable-include-path -Wno-reserved-id-macro -Wno-unused-macros -Wno-documentation-unknown-command -Wno-documentation -Wno-license-management -Wno-parentheses-equality -Wno-reserved-identifier -I ../Core/Inc -I ../Drivers/STM32U5xx_HAL_Driver/Inc -I ../Drivers/STM32U5xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32U5xx/Include -I ../Drivers/CMSIS/Include-I./RTE/_U575_SCREEN_COLOR-IC:/Users/Renton/AppData/Local/Arm/Packs/ARM/CMSIS/6.1.0/CMSIS/Core/Include-D__UVISION_VERSION="539" -D_RTE_ -DSTM32U575xx -D_RTE_ -DUSE_HAL_DRIVER -DSTM32U575xx-o u575_screen_color/dev_config.o -MD)
+I (..\Core\Inc\DEV_Config.h)(0x6A49D236)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal.h)(0x6A49BE02)
+I (..\Core\Inc\stm32u5xx_hal_conf.h)(0x6A436A0F)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_rcc.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_def.h)(0x6A49BE02)
+I (..\Drivers\CMSIS\Device\ST\STM32U5xx\Include\stm32u5xx.h)(0x6A49BE02)
+I (..\Drivers\CMSIS\Device\ST\STM32U5xx\Include\stm32u575xx.h)(0x6A49BE02)
+I (..\Drivers\CMSIS\Include\core_cm33.h)(0x6A49BE01)
+I (C:\Keil_v5\ARM\ARMCLANG\include\stdint.h)(0x6569B012)
+I (..\Drivers\CMSIS\Include\cmsis_version.h)(0x6A49BE01)
+I (..\Drivers\CMSIS\Include\cmsis_compiler.h)(0x6A49BE01)
+I (..\Drivers\CMSIS\Include\cmsis_armclang.h)(0x6A49BE01)
+I (..\Drivers\CMSIS\Include\mpu_armv8.h)(0x6A49BE01)
+I (..\Drivers\CMSIS\Device\ST\STM32U5xx\Include\system_stm32u5xx.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\Legacy\stm32_hal_legacy.h)(0x6A49BE02)
+I (C:\Keil_v5\ARM\ARMCLANG\include\stddef.h)(0x6569B012)
+I (C:\Keil_v5\ARM\ARMCLANG\include\math.h)(0x6569B012)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_rcc_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_gpio.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_gpio_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_icache.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_dma.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_dma_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_cortex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_flash.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_flash_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_pwr.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_pwr_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_spi.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_spi_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_exti.h)(0x6A49BE02)
+I (..\Core\Inc\main.hx.\Core\Inc\Debug.h)(0x00000000)
+I (C:\Keil_v5\ARM\ARMCLANG\include\stdio.h)(0x6569B012)
+F (..\Core\Src\LCD_1in69.c)(0x6A4A1770)(-xc -std=c11 --target=arm-arm-none-eabi -mcpu=cortex-m33 -mfpu=fpv5-sp-d16 -mfloat-abi=hard -c-fno-rtti -funsigned-char -fshort-enums -fshort-wchar-gdwarf-4 -O3 -ffunction-sections -Wno-packed -Wno-missing-variable-declarations -Wno-missing-prototypes -Wno-missing-noreturn -Wno-sign-conversion -Wno-nonportable-include-path -Wno-reserved-id-macro -Wno-unused-macros -Wno-documentation-unknown-command -Wno-documentation -Wno-license-management -Wno-parentheses-equality -Wno-reserved-identifier -I ../Core/Inc -I ../Drivers/STM32U5xx_HAL_Driver/Inc -I ../Drivers/STM32U5xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32U5xx/Include -I ../Drivers/CMSIS/Include-I./RTE/_U575_SCREEN_COLOR-IC:/Users/Renton/AppData/Local/Arm/Packs/ARM/CMSIS/6.1.0/CMSIS/Core/Include-D__UVISION_VERSION="539" -D_RTE_ -DSTM32U575xx -D_RTE_ -DUSE_HAL_DRIVER -DSTM32U575xx-o u575_screen_color/lcd_1in69.o -MD)
+I (..\Core\Inc\LCD_1in69.h)(0x6A4A20FA)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal.h)(0x6A49BE02)
+I (..\Core\Inc\stm32u5xx_hal_conf.h)(0x6A436A0F)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_rcc.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_def.h)(0x6A49BE02)
+I (..\Drivers\CMSIS\Device\ST\STM32U5xx\Include\stm32u5xx.h)(0x6A49BE02)
+I (..\Drivers\CMSIS\Device\ST\STM32U5xx\Include\stm32u575xx.h)(0x6A49BE02)
+I (..\Drivers\CMSIS\Include\core_cm33.h)(0x6A49BE01)
+I (C:\Keil_v5\ARM\ARMCLANG\include\stdint.h)(0x6569B012)
+I (..\Drivers\CMSIS\Include\cmsis_version.h)(0x6A49BE01)
+I (..\Drivers\CMSIS\Include\cmsis_compiler.h)(0x6A49BE01)
+I (..\Drivers\CMSIS\Include\cmsis_armclang.h)(0x6A49BE01)
+I (..\Drivers\CMSIS\Include\mpu_armv8.h)(0x6A49BE01)
+I (..\Drivers\CMSIS\Device\ST\STM32U5xx\Include\system_stm32u5xx.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\Legacy\stm32_hal_legacy.h)(0x6A49BE02)
+I (C:\Keil_v5\ARM\ARMCLANG\include\stddef.h)(0x6569B012)
+I (C:\Keil_v5\ARM\ARMCLANG\include\math.h)(0x6569B012)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_rcc_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_gpio.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_gpio_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_icache.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_dma.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_dma_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_cortex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_flash.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_flash_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_pwr.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_pwr_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_spi.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_spi_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_exti.h)(0x6A49BE02)
+I (..\Core\Inc\main.hx.\Core\Inc\Debug.h)(0x00000000)
+I (C:\Keil_v5\ARM\ARMCLANG\include\stdio.h)(0x6569B012)
+I (C:\Keil_v5\ARM\ARMCLANG\include\stdlib.h)(0x6569B012)
+I (..\Core\Inc\DEV_Config.h)(0x6A49D236)
+F (../Drivers/STM32U5xx_HAL_Driver/Src/stm32u5xx_hal_cortex.c)(0x6A49BE02)(-xc -std=c11 --target=arm-arm-none-eabi -mcpu=cortex-m33 -mfpu=fpv5-sp-d16 -mfloat-abi=hard -c-fno-rtti -funsigned-char -fshort-enums -fshort-wchar-gdwarf-4 -O3 -ffunction-sections -Wno-packed -Wno-missing-variable-declarations -Wno-missing-prototypes -Wno-missing-noreturn -Wno-sign-conversion -Wno-nonportable-include-path -Wno-reserved-id-macro -Wno-unused-macros -Wno-documentation-unknown-command -Wno-documentation -Wno-license-management -Wno-parentheses-equality -Wno-reserved-identifier -I ../Core/Inc -I ../Drivers/STM32U5xx_HAL_Driver/Inc -I ../Drivers/STM32U5xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32U5xx/Include -I ../Drivers/CMSIS/Include-I./RTE/_U575_SCREEN_COLOR-IC:/Users/Renton/AppData/Local/Arm/Packs/ARM/CMSIS/6.1.0/CMSIS/Core/Include-D__UVISION_VERSION="539" -D_RTE_ -DSTM32U575xx -D_RTE_ -DUSE_HAL_DRIVER -DSTM32U575xx-o u575_screen_color/stm32u5xx_hal_cortex.o -MD)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal.h)(0x6A49BE02)
+I (..\Core\Inc\stm32u5xx_hal_conf.h)(0x6A436A0F)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_rcc.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_def.h)(0x6A49BE02)
+I (..\Drivers\CMSIS\Device\ST\STM32U5xx\Include\stm32u5xx.h)(0x6A49BE02)
+I (..\Drivers\CMSIS\Device\ST\STM32U5xx\Include\stm32u575xx.h)(0x6A49BE02)
+I (..\Drivers\CMSIS\Include\core_cm33.h)(0x6A49BE01)
+I (C:\Keil_v5\ARM\ARMCLANG\include\stdint.h)(0x6569B012)
+I (..\Drivers\CMSIS\Include\cmsis_version.h)(0x6A49BE01)
+I (..\Drivers\CMSIS\Include\cmsis_compiler.h)(0x6A49BE01)
+I (..\Drivers\CMSIS\Include\cmsis_armclang.h)(0x6A49BE01)
+I (..\Drivers\CMSIS\Include\mpu_armv8.h)(0x6A49BE01)
+I (..\Drivers\CMSIS\Device\ST\STM32U5xx\Include\system_stm32u5xx.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\Legacy\stm32_hal_legacy.h)(0x6A49BE02)
+I (C:\Keil_v5\ARM\ARMCLANG\include\stddef.h)(0x6569B012)
+I (C:\Keil_v5\ARM\ARMCLANG\include\math.h)(0x6569B012)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_rcc_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_gpio.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_gpio_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_icache.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_dma.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_dma_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_cortex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_flash.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_flash_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_pwr.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_pwr_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_spi.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_spi_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_exti.h)(0x6A49BE02)
+F (../Drivers/STM32U5xx_HAL_Driver/Src/stm32u5xx_hal.c)(0x6A49BE02)(-xc -std=c11 --target=arm-arm-none-eabi -mcpu=cortex-m33 -mfpu=fpv5-sp-d16 -mfloat-abi=hard -c-fno-rtti -funsigned-char -fshort-enums -fshort-wchar-gdwarf-4 -O3 -ffunction-sections -Wno-packed -Wno-missing-variable-declarations -Wno-missing-prototypes -Wno-missing-noreturn -Wno-sign-conversion -Wno-nonportable-include-path -Wno-reserved-id-macro -Wno-unused-macros -Wno-documentation-unknown-command -Wno-documentation -Wno-license-management -Wno-parentheses-equality -Wno-reserved-identifier -I ../Core/Inc -I ../Drivers/STM32U5xx_HAL_Driver/Inc -I ../Drivers/STM32U5xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32U5xx/Include -I ../Drivers/CMSIS/Include-I./RTE/_U575_SCREEN_COLOR-IC:/Users/Renton/AppData/Local/Arm/Packs/ARM/CMSIS/6.1.0/CMSIS/Core/Include-D__UVISION_VERSION="539" -D_RTE_ -DSTM32U575xx -D_RTE_ -DUSE_HAL_DRIVER -DSTM32U575xx-o u575_screen_color/stm32u5xx_hal.o -MD)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal.h)(0x6A49BE02)
+I (..\Core\Inc\stm32u5xx_hal_conf.h)(0x6A436A0F)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_rcc.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_def.h)(0x6A49BE02)
+I (..\Drivers\CMSIS\Device\ST\STM32U5xx\Include\stm32u5xx.h)(0x6A49BE02)
+I (..\Drivers\CMSIS\Device\ST\STM32U5xx\Include\stm32u575xx.h)(0x6A49BE02)
+I (..\Drivers\CMSIS\Include\core_cm33.h)(0x6A49BE01)
+I (C:\Keil_v5\ARM\ARMCLANG\include\stdint.h)(0x6569B012)
+I (..\Drivers\CMSIS\Include\cmsis_version.h)(0x6A49BE01)
+I (..\Drivers\CMSIS\Include\cmsis_compiler.h)(0x6A49BE01)
+I (..\Drivers\CMSIS\Include\cmsis_armclang.h)(0x6A49BE01)
+I (..\Drivers\CMSIS\Include\mpu_armv8.h)(0x6A49BE01)
+I (..\Drivers\CMSIS\Device\ST\STM32U5xx\Include\system_stm32u5xx.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\Legacy\stm32_hal_legacy.h)(0x6A49BE02)
+I (C:\Keil_v5\ARM\ARMCLANG\include\stddef.h)(0x6569B012)
+I (C:\Keil_v5\ARM\ARMCLANG\include\math.h)(0x6569B012)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_rcc_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_gpio.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_gpio_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_icache.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_dma.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_dma_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_cortex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_flash.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_flash_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_pwr.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_pwr_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_spi.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_spi_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_exti.h)(0x6A49BE02)
+F (../Drivers/STM32U5xx_HAL_Driver/Src/stm32u5xx_hal_i2c.c)(0x6A49BE02)(-xc -std=c11 --target=arm-arm-none-eabi -mcpu=cortex-m33 -mfpu=fpv5-sp-d16 -mfloat-abi=hard -c-fno-rtti -funsigned-char -fshort-enums -fshort-wchar-gdwarf-4 -O3 -ffunction-sections -Wno-packed -Wno-missing-variable-declarations -Wno-missing-prototypes -Wno-missing-noreturn -Wno-sign-conversion -Wno-nonportable-include-path -Wno-reserved-id-macro -Wno-unused-macros -Wno-documentation-unknown-command -Wno-documentation -Wno-license-management -Wno-parentheses-equality -Wno-reserved-identifier -I ../Core/Inc -I ../Drivers/STM32U5xx_HAL_Driver/Inc -I ../Drivers/STM32U5xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32U5xx/Include -I ../Drivers/CMSIS/Include-I./RTE/_U575_SCREEN_COLOR-IC:/Users/Renton/AppData/Local/Arm/Packs/ARM/CMSIS/6.1.0/CMSIS/Core/Include-D__UVISION_VERSION="539" -D_RTE_ -DSTM32U575xx -D_RTE_ -DUSE_HAL_DRIVER -DSTM32U575xx-o u575_screen_color/stm32u5xx_hal_i2c.o -MD)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal.h)(0x6A49BE02)
+I (..\Core\Inc\stm32u5xx_hal_conf.h)(0x6A436A0F)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_rcc.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_def.h)(0x6A49BE02)
+I (..\Drivers\CMSIS\Device\ST\STM32U5xx\Include\stm32u5xx.h)(0x6A49BE02)
+I (..\Drivers\CMSIS\Device\ST\STM32U5xx\Include\stm32u575xx.h)(0x6A49BE02)
+I (..\Drivers\CMSIS\Include\core_cm33.h)(0x6A49BE01)
+I (C:\Keil_v5\ARM\ARMCLANG\include\stdint.h)(0x6569B012)
+I (..\Drivers\CMSIS\Include\cmsis_version.h)(0x6A49BE01)
+I (..\Drivers\CMSIS\Include\cmsis_compiler.h)(0x6A49BE01)
+I (..\Drivers\CMSIS\Include\cmsis_armclang.h)(0x6A49BE01)
+I (..\Drivers\CMSIS\Include\mpu_armv8.h)(0x6A49BE01)
+I (..\Drivers\CMSIS\Device\ST\STM32U5xx\Include\system_stm32u5xx.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\Legacy\stm32_hal_legacy.h)(0x6A49BE02)
+I (C:\Keil_v5\ARM\ARMCLANG\include\stddef.h)(0x6569B012)
+I (C:\Keil_v5\ARM\ARMCLANG\include\math.h)(0x6569B012)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_rcc_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_gpio.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_gpio_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_icache.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_dma.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_dma_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_cortex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_flash.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_flash_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_pwr.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_pwr_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_spi.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_spi_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_exti.h)(0x6A49BE02)
+F (../Drivers/STM32U5xx_HAL_Driver/Src/stm32u5xx_hal_i2c_ex.c)(0x6A49BE02)(-xc -std=c11 --target=arm-arm-none-eabi -mcpu=cortex-m33 -mfpu=fpv5-sp-d16 -mfloat-abi=hard -c-fno-rtti -funsigned-char -fshort-enums -fshort-wchar-gdwarf-4 -O3 -ffunction-sections -Wno-packed -Wno-missing-variable-declarations -Wno-missing-prototypes -Wno-missing-noreturn -Wno-sign-conversion -Wno-nonportable-include-path -Wno-reserved-id-macro -Wno-unused-macros -Wno-documentation-unknown-command -Wno-documentation -Wno-license-management -Wno-parentheses-equality -Wno-reserved-identifier -I ../Core/Inc -I ../Drivers/STM32U5xx_HAL_Driver/Inc -I ../Drivers/STM32U5xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32U5xx/Include -I ../Drivers/CMSIS/Include-I./RTE/_U575_SCREEN_COLOR-IC:/Users/Renton/AppData/Local/Arm/Packs/ARM/CMSIS/6.1.0/CMSIS/Core/Include-D__UVISION_VERSION="539" -D_RTE_ -DSTM32U575xx -D_RTE_ -DUSE_HAL_DRIVER -DSTM32U575xx-o u575_screen_color/stm32u5xx_hal_i2c_ex.o -MD)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal.h)(0x6A49BE02)
+I (..\Core\Inc\stm32u5xx_hal_conf.h)(0x6A436A0F)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_rcc.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_def.h)(0x6A49BE02)
+I (..\Drivers\CMSIS\Device\ST\STM32U5xx\Include\stm32u5xx.h)(0x6A49BE02)
+I (..\Drivers\CMSIS\Device\ST\STM32U5xx\Include\stm32u575xx.h)(0x6A49BE02)
+I (..\Drivers\CMSIS\Include\core_cm33.h)(0x6A49BE01)
+I (C:\Keil_v5\ARM\ARMCLANG\include\stdint.h)(0x6569B012)
+I (..\Drivers\CMSIS\Include\cmsis_version.h)(0x6A49BE01)
+I (..\Drivers\CMSIS\Include\cmsis_compiler.h)(0x6A49BE01)
+I (..\Drivers\CMSIS\Include\cmsis_armclang.h)(0x6A49BE01)
+I (..\Drivers\CMSIS\Include\mpu_armv8.h)(0x6A49BE01)
+I (..\Drivers\CMSIS\Device\ST\STM32U5xx\Include\system_stm32u5xx.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\Legacy\stm32_hal_legacy.h)(0x6A49BE02)
+I (C:\Keil_v5\ARM\ARMCLANG\include\stddef.h)(0x6569B012)
+I (C:\Keil_v5\ARM\ARMCLANG\include\math.h)(0x6569B012)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_rcc_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_gpio.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_gpio_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_icache.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_dma.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_dma_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_cortex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_flash.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_flash_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_pwr.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_pwr_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_spi.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_spi_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_exti.h)(0x6A49BE02)
+F (../Drivers/STM32U5xx_HAL_Driver/Src/stm32u5xx_hal_rcc.c)(0x6A49BE02)(-xc -std=c11 --target=arm-arm-none-eabi -mcpu=cortex-m33 -mfpu=fpv5-sp-d16 -mfloat-abi=hard -c-fno-rtti -funsigned-char -fshort-enums -fshort-wchar-gdwarf-4 -O3 -ffunction-sections -Wno-packed -Wno-missing-variable-declarations -Wno-missing-prototypes -Wno-missing-noreturn -Wno-sign-conversion -Wno-nonportable-include-path -Wno-reserved-id-macro -Wno-unused-macros -Wno-documentation-unknown-command -Wno-documentation -Wno-license-management -Wno-parentheses-equality -Wno-reserved-identifier -I ../Core/Inc -I ../Drivers/STM32U5xx_HAL_Driver/Inc -I ../Drivers/STM32U5xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32U5xx/Include -I ../Drivers/CMSIS/Include-I./RTE/_U575_SCREEN_COLOR-IC:/Users/Renton/AppData/Local/Arm/Packs/ARM/CMSIS/6.1.0/CMSIS/Core/Include-D__UVISION_VERSION="539" -D_RTE_ -DSTM32U575xx -D_RTE_ -DUSE_HAL_DRIVER -DSTM32U575xx-o u575_screen_color/stm32u5xx_hal_rcc.o -MD)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal.h)(0x6A49BE02)
+I (..\Core\Inc\stm32u5xx_hal_conf.h)(0x6A436A0F)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_rcc.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_def.h)(0x6A49BE02)
+I (..\Drivers\CMSIS\Device\ST\STM32U5xx\Include\stm32u5xx.h)(0x6A49BE02)
+I (..\Drivers\CMSIS\Device\ST\STM32U5xx\Include\stm32u575xx.h)(0x6A49BE02)
+I (..\Drivers\CMSIS\Include\core_cm33.h)(0x6A49BE01)
+I (C:\Keil_v5\ARM\ARMCLANG\include\stdint.h)(0x6569B012)
+I (..\Drivers\CMSIS\Include\cmsis_version.h)(0x6A49BE01)
+I (..\Drivers\CMSIS\Include\cmsis_compiler.h)(0x6A49BE01)
+I (..\Drivers\CMSIS\Include\cmsis_armclang.h)(0x6A49BE01)
+I (..\Drivers\CMSIS\Include\mpu_armv8.h)(0x6A49BE01)
+I (..\Drivers\CMSIS\Device\ST\STM32U5xx\Include\system_stm32u5xx.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\Legacy\stm32_hal_legacy.h)(0x6A49BE02)
+I (C:\Keil_v5\ARM\ARMCLANG\include\stddef.h)(0x6569B012)
+I (C:\Keil_v5\ARM\ARMCLANG\include\math.h)(0x6569B012)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_rcc_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_gpio.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_gpio_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_icache.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_dma.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_dma_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_cortex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_flash.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_flash_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_pwr.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_pwr_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_spi.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_spi_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_exti.h)(0x6A49BE02)
+F (../Drivers/STM32U5xx_HAL_Driver/Src/stm32u5xx_hal_rcc_ex.c)(0x6A49BE02)(-xc -std=c11 --target=arm-arm-none-eabi -mcpu=cortex-m33 -mfpu=fpv5-sp-d16 -mfloat-abi=hard -c-fno-rtti -funsigned-char -fshort-enums -fshort-wchar-gdwarf-4 -O3 -ffunction-sections -Wno-packed -Wno-missing-variable-declarations -Wno-missing-prototypes -Wno-missing-noreturn -Wno-sign-conversion -Wno-nonportable-include-path -Wno-reserved-id-macro -Wno-unused-macros -Wno-documentation-unknown-command -Wno-documentation -Wno-license-management -Wno-parentheses-equality -Wno-reserved-identifier -I ../Core/Inc -I ../Drivers/STM32U5xx_HAL_Driver/Inc -I ../Drivers/STM32U5xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32U5xx/Include -I ../Drivers/CMSIS/Include-I./RTE/_U575_SCREEN_COLOR-IC:/Users/Renton/AppData/Local/Arm/Packs/ARM/CMSIS/6.1.0/CMSIS/Core/Include-D__UVISION_VERSION="539" -D_RTE_ -DSTM32U575xx -D_RTE_ -DUSE_HAL_DRIVER -DSTM32U575xx-o u575_screen_color/stm32u5xx_hal_rcc_ex.o -MD)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal.h)(0x6A49BE02)
+I (..\Core\Inc\stm32u5xx_hal_conf.h)(0x6A436A0F)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_rcc.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_def.h)(0x6A49BE02)
+I (..\Drivers\CMSIS\Device\ST\STM32U5xx\Include\stm32u5xx.h)(0x6A49BE02)
+I (..\Drivers\CMSIS\Device\ST\STM32U5xx\Include\stm32u575xx.h)(0x6A49BE02)
+I (..\Drivers\CMSIS\Include\core_cm33.h)(0x6A49BE01)
+I (C:\Keil_v5\ARM\ARMCLANG\include\stdint.h)(0x6569B012)
+I (..\Drivers\CMSIS\Include\cmsis_version.h)(0x6A49BE01)
+I (..\Drivers\CMSIS\Include\cmsis_compiler.h)(0x6A49BE01)
+I (..\Drivers\CMSIS\Include\cmsis_armclang.h)(0x6A49BE01)
+I (..\Drivers\CMSIS\Include\mpu_armv8.h)(0x6A49BE01)
+I (..\Drivers\CMSIS\Device\ST\STM32U5xx\Include\system_stm32u5xx.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\Legacy\stm32_hal_legacy.h)(0x6A49BE02)
+I (C:\Keil_v5\ARM\ARMCLANG\include\stddef.h)(0x6569B012)
+I (C:\Keil_v5\ARM\ARMCLANG\include\math.h)(0x6569B012)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_rcc_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_gpio.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_gpio_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_icache.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_dma.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_dma_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_cortex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_flash.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_flash_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_pwr.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_pwr_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_spi.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_spi_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_exti.h)(0x6A49BE02)
+F (../Drivers/STM32U5xx_HAL_Driver/Src/stm32u5xx_hal_flash.c)(0x6A49BE02)(-xc -std=c11 --target=arm-arm-none-eabi -mcpu=cortex-m33 -mfpu=fpv5-sp-d16 -mfloat-abi=hard -c-fno-rtti -funsigned-char -fshort-enums -fshort-wchar-gdwarf-4 -O3 -ffunction-sections -Wno-packed -Wno-missing-variable-declarations -Wno-missing-prototypes -Wno-missing-noreturn -Wno-sign-conversion -Wno-nonportable-include-path -Wno-reserved-id-macro -Wno-unused-macros -Wno-documentation-unknown-command -Wno-documentation -Wno-license-management -Wno-parentheses-equality -Wno-reserved-identifier -I ../Core/Inc -I ../Drivers/STM32U5xx_HAL_Driver/Inc -I ../Drivers/STM32U5xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32U5xx/Include -I ../Drivers/CMSIS/Include-I./RTE/_U575_SCREEN_COLOR-IC:/Users/Renton/AppData/Local/Arm/Packs/ARM/CMSIS/6.1.0/CMSIS/Core/Include-D__UVISION_VERSION="539" -D_RTE_ -DSTM32U575xx -D_RTE_ -DUSE_HAL_DRIVER -DSTM32U575xx-o u575_screen_color/stm32u5xx_hal_flash.o -MD)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal.h)(0x6A49BE02)
+I (..\Core\Inc\stm32u5xx_hal_conf.h)(0x6A436A0F)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_rcc.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_def.h)(0x6A49BE02)
+I (..\Drivers\CMSIS\Device\ST\STM32U5xx\Include\stm32u5xx.h)(0x6A49BE02)
+I (..\Drivers\CMSIS\Device\ST\STM32U5xx\Include\stm32u575xx.h)(0x6A49BE02)
+I (..\Drivers\CMSIS\Include\core_cm33.h)(0x6A49BE01)
+I (C:\Keil_v5\ARM\ARMCLANG\include\stdint.h)(0x6569B012)
+I (..\Drivers\CMSIS\Include\cmsis_version.h)(0x6A49BE01)
+I (..\Drivers\CMSIS\Include\cmsis_compiler.h)(0x6A49BE01)
+I (..\Drivers\CMSIS\Include\cmsis_armclang.h)(0x6A49BE01)
+I (..\Drivers\CMSIS\Include\mpu_armv8.h)(0x6A49BE01)
+I (..\Drivers\CMSIS\Device\ST\STM32U5xx\Include\system_stm32u5xx.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\Legacy\stm32_hal_legacy.h)(0x6A49BE02)
+I (C:\Keil_v5\ARM\ARMCLANG\include\stddef.h)(0x6569B012)
+I (C:\Keil_v5\ARM\ARMCLANG\include\math.h)(0x6569B012)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_rcc_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_gpio.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_gpio_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_icache.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_dma.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_dma_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_cortex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_flash.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_flash_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_pwr.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_pwr_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_spi.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_spi_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_exti.h)(0x6A49BE02)
+F (../Drivers/STM32U5xx_HAL_Driver/Src/stm32u5xx_hal_flash_ex.c)(0x6A49BE02)(-xc -std=c11 --target=arm-arm-none-eabi -mcpu=cortex-m33 -mfpu=fpv5-sp-d16 -mfloat-abi=hard -c-fno-rtti -funsigned-char -fshort-enums -fshort-wchar-gdwarf-4 -O3 -ffunction-sections -Wno-packed -Wno-missing-variable-declarations -Wno-missing-prototypes -Wno-missing-noreturn -Wno-sign-conversion -Wno-nonportable-include-path -Wno-reserved-id-macro -Wno-unused-macros -Wno-documentation-unknown-command -Wno-documentation -Wno-license-management -Wno-parentheses-equality -Wno-reserved-identifier -I ../Core/Inc -I ../Drivers/STM32U5xx_HAL_Driver/Inc -I ../Drivers/STM32U5xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32U5xx/Include -I ../Drivers/CMSIS/Include-I./RTE/_U575_SCREEN_COLOR-IC:/Users/Renton/AppData/Local/Arm/Packs/ARM/CMSIS/6.1.0/CMSIS/Core/Include-D__UVISION_VERSION="539" -D_RTE_ -DSTM32U575xx -D_RTE_ -DUSE_HAL_DRIVER -DSTM32U575xx-o u575_screen_color/stm32u5xx_hal_flash_ex.o -MD)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal.h)(0x6A49BE02)
+I (..\Core\Inc\stm32u5xx_hal_conf.h)(0x6A436A0F)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_rcc.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_def.h)(0x6A49BE02)
+I (..\Drivers\CMSIS\Device\ST\STM32U5xx\Include\stm32u5xx.h)(0x6A49BE02)
+I (..\Drivers\CMSIS\Device\ST\STM32U5xx\Include\stm32u575xx.h)(0x6A49BE02)
+I (..\Drivers\CMSIS\Include\core_cm33.h)(0x6A49BE01)
+I (C:\Keil_v5\ARM\ARMCLANG\include\stdint.h)(0x6569B012)
+I (..\Drivers\CMSIS\Include\cmsis_version.h)(0x6A49BE01)
+I (..\Drivers\CMSIS\Include\cmsis_compiler.h)(0x6A49BE01)
+I (..\Drivers\CMSIS\Include\cmsis_armclang.h)(0x6A49BE01)
+I (..\Drivers\CMSIS\Include\mpu_armv8.h)(0x6A49BE01)
+I (..\Drivers\CMSIS\Device\ST\STM32U5xx\Include\system_stm32u5xx.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\Legacy\stm32_hal_legacy.h)(0x6A49BE02)
+I (C:\Keil_v5\ARM\ARMCLANG\include\stddef.h)(0x6569B012)
+I (C:\Keil_v5\ARM\ARMCLANG\include\math.h)(0x6569B012)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_rcc_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_gpio.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_gpio_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_icache.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_dma.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_dma_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_cortex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_flash.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_flash_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_pwr.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_pwr_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_spi.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_spi_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_exti.h)(0x6A49BE02)
+F (../Drivers/STM32U5xx_HAL_Driver/Src/stm32u5xx_hal_gpio.c)(0x6A49BE02)(-xc -std=c11 --target=arm-arm-none-eabi -mcpu=cortex-m33 -mfpu=fpv5-sp-d16 -mfloat-abi=hard -c-fno-rtti -funsigned-char -fshort-enums -fshort-wchar-gdwarf-4 -O3 -ffunction-sections -Wno-packed -Wno-missing-variable-declarations -Wno-missing-prototypes -Wno-missing-noreturn -Wno-sign-conversion -Wno-nonportable-include-path -Wno-reserved-id-macro -Wno-unused-macros -Wno-documentation-unknown-command -Wno-documentation -Wno-license-management -Wno-parentheses-equality -Wno-reserved-identifier -I ../Core/Inc -I ../Drivers/STM32U5xx_HAL_Driver/Inc -I ../Drivers/STM32U5xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32U5xx/Include -I ../Drivers/CMSIS/Include-I./RTE/_U575_SCREEN_COLOR-IC:/Users/Renton/AppData/Local/Arm/Packs/ARM/CMSIS/6.1.0/CMSIS/Core/Include-D__UVISION_VERSION="539" -D_RTE_ -DSTM32U575xx -D_RTE_ -DUSE_HAL_DRIVER -DSTM32U575xx-o u575_screen_color/stm32u5xx_hal_gpio.o -MD)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal.h)(0x6A49BE02)
+I (..\Core\Inc\stm32u5xx_hal_conf.h)(0x6A436A0F)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_rcc.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_def.h)(0x6A49BE02)
+I (..\Drivers\CMSIS\Device\ST\STM32U5xx\Include\stm32u5xx.h)(0x6A49BE02)
+I (..\Drivers\CMSIS\Device\ST\STM32U5xx\Include\stm32u575xx.h)(0x6A49BE02)
+I (..\Drivers\CMSIS\Include\core_cm33.h)(0x6A49BE01)
+I (C:\Keil_v5\ARM\ARMCLANG\include\stdint.h)(0x6569B012)
+I (..\Drivers\CMSIS\Include\cmsis_version.h)(0x6A49BE01)
+I (..\Drivers\CMSIS\Include\cmsis_compiler.h)(0x6A49BE01)
+I (..\Drivers\CMSIS\Include\cmsis_armclang.h)(0x6A49BE01)
+I (..\Drivers\CMSIS\Include\mpu_armv8.h)(0x6A49BE01)
+I (..\Drivers\CMSIS\Device\ST\STM32U5xx\Include\system_stm32u5xx.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\Legacy\stm32_hal_legacy.h)(0x6A49BE02)
+I (C:\Keil_v5\ARM\ARMCLANG\include\stddef.h)(0x6569B012)
+I (C:\Keil_v5\ARM\ARMCLANG\include\math.h)(0x6569B012)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_rcc_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_gpio.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_gpio_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_icache.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_dma.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_dma_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_cortex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_flash.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_flash_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_pwr.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_pwr_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_spi.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_spi_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_exti.h)(0x6A49BE02)
+F (../Drivers/STM32U5xx_HAL_Driver/Src/stm32u5xx_hal_dma.c)(0x6A49BE02)(-xc -std=c11 --target=arm-arm-none-eabi -mcpu=cortex-m33 -mfpu=fpv5-sp-d16 -mfloat-abi=hard -c-fno-rtti -funsigned-char -fshort-enums -fshort-wchar-gdwarf-4 -O3 -ffunction-sections -Wno-packed -Wno-missing-variable-declarations -Wno-missing-prototypes -Wno-missing-noreturn -Wno-sign-conversion -Wno-nonportable-include-path -Wno-reserved-id-macro -Wno-unused-macros -Wno-documentation-unknown-command -Wno-documentation -Wno-license-management -Wno-parentheses-equality -Wno-reserved-identifier -I ../Core/Inc -I ../Drivers/STM32U5xx_HAL_Driver/Inc -I ../Drivers/STM32U5xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32U5xx/Include -I ../Drivers/CMSIS/Include-I./RTE/_U575_SCREEN_COLOR-IC:/Users/Renton/AppData/Local/Arm/Packs/ARM/CMSIS/6.1.0/CMSIS/Core/Include-D__UVISION_VERSION="539" -D_RTE_ -DSTM32U575xx -D_RTE_ -DUSE_HAL_DRIVER -DSTM32U575xx-o u575_screen_color/stm32u5xx_hal_dma.o -MD)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal.h)(0x6A49BE02)
+I (..\Core\Inc\stm32u5xx_hal_conf.h)(0x6A436A0F)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_rcc.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_def.h)(0x6A49BE02)
+I (..\Drivers\CMSIS\Device\ST\STM32U5xx\Include\stm32u5xx.h)(0x6A49BE02)
+I (..\Drivers\CMSIS\Device\ST\STM32U5xx\Include\stm32u575xx.h)(0x6A49BE02)
+I (..\Drivers\CMSIS\Include\core_cm33.h)(0x6A49BE01)
+I (C:\Keil_v5\ARM\ARMCLANG\include\stdint.h)(0x6569B012)
+I (..\Drivers\CMSIS\Include\cmsis_version.h)(0x6A49BE01)
+I (..\Drivers\CMSIS\Include\cmsis_compiler.h)(0x6A49BE01)
+I (..\Drivers\CMSIS\Include\cmsis_armclang.h)(0x6A49BE01)
+I (..\Drivers\CMSIS\Include\mpu_armv8.h)(0x6A49BE01)
+I (..\Drivers\CMSIS\Device\ST\STM32U5xx\Include\system_stm32u5xx.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\Legacy\stm32_hal_legacy.h)(0x6A49BE02)
+I (C:\Keil_v5\ARM\ARMCLANG\include\stddef.h)(0x6569B012)
+I (C:\Keil_v5\ARM\ARMCLANG\include\math.h)(0x6569B012)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_rcc_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_gpio.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_gpio_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_icache.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_dma.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_dma_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_cortex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_flash.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_flash_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_pwr.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_pwr_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_spi.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_spi_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_exti.h)(0x6A49BE02)
+F (../Drivers/STM32U5xx_HAL_Driver/Src/stm32u5xx_hal_dma_ex.c)(0x6A49BE02)(-xc -std=c11 --target=arm-arm-none-eabi -mcpu=cortex-m33 -mfpu=fpv5-sp-d16 -mfloat-abi=hard -c-fno-rtti -funsigned-char -fshort-enums -fshort-wchar-gdwarf-4 -O3 -ffunction-sections -Wno-packed -Wno-missing-variable-declarations -Wno-missing-prototypes -Wno-missing-noreturn -Wno-sign-conversion -Wno-nonportable-include-path -Wno-reserved-id-macro -Wno-unused-macros -Wno-documentation-unknown-command -Wno-documentation -Wno-license-management -Wno-parentheses-equality -Wno-reserved-identifier -I ../Core/Inc -I ../Drivers/STM32U5xx_HAL_Driver/Inc -I ../Drivers/STM32U5xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32U5xx/Include -I ../Drivers/CMSIS/Include-I./RTE/_U575_SCREEN_COLOR-IC:/Users/Renton/AppData/Local/Arm/Packs/ARM/CMSIS/6.1.0/CMSIS/Core/Include-D__UVISION_VERSION="539" -D_RTE_ -DSTM32U575xx -D_RTE_ -DUSE_HAL_DRIVER -DSTM32U575xx-o u575_screen_color/stm32u5xx_hal_dma_ex.o -MD)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal.h)(0x6A49BE02)
+I (..\Core\Inc\stm32u5xx_hal_conf.h)(0x6A436A0F)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_rcc.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_def.h)(0x6A49BE02)
+I (..\Drivers\CMSIS\Device\ST\STM32U5xx\Include\stm32u5xx.h)(0x6A49BE02)
+I (..\Drivers\CMSIS\Device\ST\STM32U5xx\Include\stm32u575xx.h)(0x6A49BE02)
+I (..\Drivers\CMSIS\Include\core_cm33.h)(0x6A49BE01)
+I (C:\Keil_v5\ARM\ARMCLANG\include\stdint.h)(0x6569B012)
+I (..\Drivers\CMSIS\Include\cmsis_version.h)(0x6A49BE01)
+I (..\Drivers\CMSIS\Include\cmsis_compiler.h)(0x6A49BE01)
+I (..\Drivers\CMSIS\Include\cmsis_armclang.h)(0x6A49BE01)
+I (..\Drivers\CMSIS\Include\mpu_armv8.h)(0x6A49BE01)
+I (..\Drivers\CMSIS\Device\ST\STM32U5xx\Include\system_stm32u5xx.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\Legacy\stm32_hal_legacy.h)(0x6A49BE02)
+I (C:\Keil_v5\ARM\ARMCLANG\include\stddef.h)(0x6569B012)
+I (C:\Keil_v5\ARM\ARMCLANG\include\math.h)(0x6569B012)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_rcc_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_gpio.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_gpio_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_icache.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_dma.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_dma_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_cortex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_flash.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_flash_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_pwr.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_pwr_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_spi.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_spi_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_exti.h)(0x6A49BE02)
+F (../Drivers/STM32U5xx_HAL_Driver/Src/stm32u5xx_hal_exti.c)(0x6A49BE02)(-xc -std=c11 --target=arm-arm-none-eabi -mcpu=cortex-m33 -mfpu=fpv5-sp-d16 -mfloat-abi=hard -c-fno-rtti -funsigned-char -fshort-enums -fshort-wchar-gdwarf-4 -O3 -ffunction-sections -Wno-packed -Wno-missing-variable-declarations -Wno-missing-prototypes -Wno-missing-noreturn -Wno-sign-conversion -Wno-nonportable-include-path -Wno-reserved-id-macro -Wno-unused-macros -Wno-documentation-unknown-command -Wno-documentation -Wno-license-management -Wno-parentheses-equality -Wno-reserved-identifier -I ../Core/Inc -I ../Drivers/STM32U5xx_HAL_Driver/Inc -I ../Drivers/STM32U5xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32U5xx/Include -I ../Drivers/CMSIS/Include-I./RTE/_U575_SCREEN_COLOR-IC:/Users/Renton/AppData/Local/Arm/Packs/ARM/CMSIS/6.1.0/CMSIS/Core/Include-D__UVISION_VERSION="539" -D_RTE_ -DSTM32U575xx -D_RTE_ -DUSE_HAL_DRIVER -DSTM32U575xx-o u575_screen_color/stm32u5xx_hal_exti.o -MD)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal.h)(0x6A49BE02)
+I (..\Core\Inc\stm32u5xx_hal_conf.h)(0x6A436A0F)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_rcc.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_def.h)(0x6A49BE02)
+I (..\Drivers\CMSIS\Device\ST\STM32U5xx\Include\stm32u5xx.h)(0x6A49BE02)
+I (..\Drivers\CMSIS\Device\ST\STM32U5xx\Include\stm32u575xx.h)(0x6A49BE02)
+I (..\Drivers\CMSIS\Include\core_cm33.h)(0x6A49BE01)
+I (C:\Keil_v5\ARM\ARMCLANG\include\stdint.h)(0x6569B012)
+I (..\Drivers\CMSIS\Include\cmsis_version.h)(0x6A49BE01)
+I (..\Drivers\CMSIS\Include\cmsis_compiler.h)(0x6A49BE01)
+I (..\Drivers\CMSIS\Include\cmsis_armclang.h)(0x6A49BE01)
+I (..\Drivers\CMSIS\Include\mpu_armv8.h)(0x6A49BE01)
+I (..\Drivers\CMSIS\Device\ST\STM32U5xx\Include\system_stm32u5xx.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\Legacy\stm32_hal_legacy.h)(0x6A49BE02)
+I (C:\Keil_v5\ARM\ARMCLANG\include\stddef.h)(0x6569B012)
+I (C:\Keil_v5\ARM\ARMCLANG\include\math.h)(0x6569B012)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_rcc_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_gpio.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_gpio_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_icache.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_dma.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_dma_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_cortex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_flash.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_flash_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_pwr.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_pwr_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_spi.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_spi_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_exti.h)(0x6A49BE02)
+F (../Drivers/STM32U5xx_HAL_Driver/Src/stm32u5xx_hal_pwr.c)(0x6A49BE02)(-xc -std=c11 --target=arm-arm-none-eabi -mcpu=cortex-m33 -mfpu=fpv5-sp-d16 -mfloat-abi=hard -c-fno-rtti -funsigned-char -fshort-enums -fshort-wchar-gdwarf-4 -O3 -ffunction-sections -Wno-packed -Wno-missing-variable-declarations -Wno-missing-prototypes -Wno-missing-noreturn -Wno-sign-conversion -Wno-nonportable-include-path -Wno-reserved-id-macro -Wno-unused-macros -Wno-documentation-unknown-command -Wno-documentation -Wno-license-management -Wno-parentheses-equality -Wno-reserved-identifier -I ../Core/Inc -I ../Drivers/STM32U5xx_HAL_Driver/Inc -I ../Drivers/STM32U5xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32U5xx/Include -I ../Drivers/CMSIS/Include-I./RTE/_U575_SCREEN_COLOR-IC:/Users/Renton/AppData/Local/Arm/Packs/ARM/CMSIS/6.1.0/CMSIS/Core/Include-D__UVISION_VERSION="539" -D_RTE_ -DSTM32U575xx -D_RTE_ -DUSE_HAL_DRIVER -DSTM32U575xx-o u575_screen_color/stm32u5xx_hal_pwr.o -MD)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal.h)(0x6A49BE02)
+I (..\Core\Inc\stm32u5xx_hal_conf.h)(0x6A436A0F)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_rcc.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_def.h)(0x6A49BE02)
+I (..\Drivers\CMSIS\Device\ST\STM32U5xx\Include\stm32u5xx.h)(0x6A49BE02)
+I (..\Drivers\CMSIS\Device\ST\STM32U5xx\Include\stm32u575xx.h)(0x6A49BE02)
+I (..\Drivers\CMSIS\Include\core_cm33.h)(0x6A49BE01)
+I (C:\Keil_v5\ARM\ARMCLANG\include\stdint.h)(0x6569B012)
+I (..\Drivers\CMSIS\Include\cmsis_version.h)(0x6A49BE01)
+I (..\Drivers\CMSIS\Include\cmsis_compiler.h)(0x6A49BE01)
+I (..\Drivers\CMSIS\Include\cmsis_armclang.h)(0x6A49BE01)
+I (..\Drivers\CMSIS\Include\mpu_armv8.h)(0x6A49BE01)
+I (..\Drivers\CMSIS\Device\ST\STM32U5xx\Include\system_stm32u5xx.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\Legacy\stm32_hal_legacy.h)(0x6A49BE02)
+I (C:\Keil_v5\ARM\ARMCLANG\include\stddef.h)(0x6569B012)
+I (C:\Keil_v5\ARM\ARMCLANG\include\math.h)(0x6569B012)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_rcc_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_gpio.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_gpio_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_icache.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_dma.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_dma_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_cortex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_flash.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_flash_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_pwr.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_pwr_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_spi.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_spi_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_exti.h)(0x6A49BE02)
+F (../Drivers/STM32U5xx_HAL_Driver/Src/stm32u5xx_hal_pwr_ex.c)(0x6A49BE02)(-xc -std=c11 --target=arm-arm-none-eabi -mcpu=cortex-m33 -mfpu=fpv5-sp-d16 -mfloat-abi=hard -c-fno-rtti -funsigned-char -fshort-enums -fshort-wchar-gdwarf-4 -O3 -ffunction-sections -Wno-packed -Wno-missing-variable-declarations -Wno-missing-prototypes -Wno-missing-noreturn -Wno-sign-conversion -Wno-nonportable-include-path -Wno-reserved-id-macro -Wno-unused-macros -Wno-documentation-unknown-command -Wno-documentation -Wno-license-management -Wno-parentheses-equality -Wno-reserved-identifier -I ../Core/Inc -I ../Drivers/STM32U5xx_HAL_Driver/Inc -I ../Drivers/STM32U5xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32U5xx/Include -I ../Drivers/CMSIS/Include-I./RTE/_U575_SCREEN_COLOR-IC:/Users/Renton/AppData/Local/Arm/Packs/ARM/CMSIS/6.1.0/CMSIS/Core/Include-D__UVISION_VERSION="539" -D_RTE_ -DSTM32U575xx -D_RTE_ -DUSE_HAL_DRIVER -DSTM32U575xx-o u575_screen_color/stm32u5xx_hal_pwr_ex.o -MD)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal.h)(0x6A49BE02)
+I (..\Core\Inc\stm32u5xx_hal_conf.h)(0x6A436A0F)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_rcc.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_def.h)(0x6A49BE02)
+I (..\Drivers\CMSIS\Device\ST\STM32U5xx\Include\stm32u5xx.h)(0x6A49BE02)
+I (..\Drivers\CMSIS\Device\ST\STM32U5xx\Include\stm32u575xx.h)(0x6A49BE02)
+I (..\Drivers\CMSIS\Include\core_cm33.h)(0x6A49BE01)
+I (C:\Keil_v5\ARM\ARMCLANG\include\stdint.h)(0x6569B012)
+I (..\Drivers\CMSIS\Include\cmsis_version.h)(0x6A49BE01)
+I (..\Drivers\CMSIS\Include\cmsis_compiler.h)(0x6A49BE01)
+I (..\Drivers\CMSIS\Include\cmsis_armclang.h)(0x6A49BE01)
+I (..\Drivers\CMSIS\Include\mpu_armv8.h)(0x6A49BE01)
+I (..\Drivers\CMSIS\Device\ST\STM32U5xx\Include\system_stm32u5xx.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\Legacy\stm32_hal_legacy.h)(0x6A49BE02)
+I (C:\Keil_v5\ARM\ARMCLANG\include\stddef.h)(0x6569B012)
+I (C:\Keil_v5\ARM\ARMCLANG\include\math.h)(0x6569B012)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_rcc_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_gpio.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_gpio_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_icache.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_dma.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_dma_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_cortex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_flash.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_flash_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_pwr.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_pwr_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_spi.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_spi_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_exti.h)(0x6A49BE02)
+F (../Drivers/STM32U5xx_HAL_Driver/Src/stm32u5xx_hal_gtzc.c)(0x6A49BE02)(-xc -std=c11 --target=arm-arm-none-eabi -mcpu=cortex-m33 -mfpu=fpv5-sp-d16 -mfloat-abi=hard -c-fno-rtti -funsigned-char -fshort-enums -fshort-wchar-gdwarf-4 -O3 -ffunction-sections -Wno-packed -Wno-missing-variable-declarations -Wno-missing-prototypes -Wno-missing-noreturn -Wno-sign-conversion -Wno-nonportable-include-path -Wno-reserved-id-macro -Wno-unused-macros -Wno-documentation-unknown-command -Wno-documentation -Wno-license-management -Wno-parentheses-equality -Wno-reserved-identifier -I ../Core/Inc -I ../Drivers/STM32U5xx_HAL_Driver/Inc -I ../Drivers/STM32U5xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32U5xx/Include -I ../Drivers/CMSIS/Include-I./RTE/_U575_SCREEN_COLOR-IC:/Users/Renton/AppData/Local/Arm/Packs/ARM/CMSIS/6.1.0/CMSIS/Core/Include-D__UVISION_VERSION="539" -D_RTE_ -DSTM32U575xx -D_RTE_ -DUSE_HAL_DRIVER -DSTM32U575xx-o u575_screen_color/stm32u5xx_hal_gtzc.o -MD)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal.h)(0x6A49BE02)
+I (..\Core\Inc\stm32u5xx_hal_conf.h)(0x6A436A0F)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_rcc.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_def.h)(0x6A49BE02)
+I (..\Drivers\CMSIS\Device\ST\STM32U5xx\Include\stm32u5xx.h)(0x6A49BE02)
+I (..\Drivers\CMSIS\Device\ST\STM32U5xx\Include\stm32u575xx.h)(0x6A49BE02)
+I (..\Drivers\CMSIS\Include\core_cm33.h)(0x6A49BE01)
+I (C:\Keil_v5\ARM\ARMCLANG\include\stdint.h)(0x6569B012)
+I (..\Drivers\CMSIS\Include\cmsis_version.h)(0x6A49BE01)
+I (..\Drivers\CMSIS\Include\cmsis_compiler.h)(0x6A49BE01)
+I (..\Drivers\CMSIS\Include\cmsis_armclang.h)(0x6A49BE01)
+I (..\Drivers\CMSIS\Include\mpu_armv8.h)(0x6A49BE01)
+I (..\Drivers\CMSIS\Device\ST\STM32U5xx\Include\system_stm32u5xx.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\Legacy\stm32_hal_legacy.h)(0x6A49BE02)
+I (C:\Keil_v5\ARM\ARMCLANG\include\stddef.h)(0x6569B012)
+I (C:\Keil_v5\ARM\ARMCLANG\include\math.h)(0x6569B012)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_rcc_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_gpio.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_gpio_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_icache.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_dma.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_dma_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_cortex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_flash.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_flash_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_pwr.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_pwr_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_spi.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_spi_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_exti.h)(0x6A49BE02)
+F (../Drivers/STM32U5xx_HAL_Driver/Src/stm32u5xx_hal_icache.c)(0x6A49BE02)(-xc -std=c11 --target=arm-arm-none-eabi -mcpu=cortex-m33 -mfpu=fpv5-sp-d16 -mfloat-abi=hard -c-fno-rtti -funsigned-char -fshort-enums -fshort-wchar-gdwarf-4 -O3 -ffunction-sections -Wno-packed -Wno-missing-variable-declarations -Wno-missing-prototypes -Wno-missing-noreturn -Wno-sign-conversion -Wno-nonportable-include-path -Wno-reserved-id-macro -Wno-unused-macros -Wno-documentation-unknown-command -Wno-documentation -Wno-license-management -Wno-parentheses-equality -Wno-reserved-identifier -I ../Core/Inc -I ../Drivers/STM32U5xx_HAL_Driver/Inc -I ../Drivers/STM32U5xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32U5xx/Include -I ../Drivers/CMSIS/Include-I./RTE/_U575_SCREEN_COLOR-IC:/Users/Renton/AppData/Local/Arm/Packs/ARM/CMSIS/6.1.0/CMSIS/Core/Include-D__UVISION_VERSION="539" -D_RTE_ -DSTM32U575xx -D_RTE_ -DUSE_HAL_DRIVER -DSTM32U575xx-o u575_screen_color/stm32u5xx_hal_icache.o -MD)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal.h)(0x6A49BE02)
+I (..\Core\Inc\stm32u5xx_hal_conf.h)(0x6A436A0F)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_rcc.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_def.h)(0x6A49BE02)
+I (..\Drivers\CMSIS\Device\ST\STM32U5xx\Include\stm32u5xx.h)(0x6A49BE02)
+I (..\Drivers\CMSIS\Device\ST\STM32U5xx\Include\stm32u575xx.h)(0x6A49BE02)
+I (..\Drivers\CMSIS\Include\core_cm33.h)(0x6A49BE01)
+I (C:\Keil_v5\ARM\ARMCLANG\include\stdint.h)(0x6569B012)
+I (..\Drivers\CMSIS\Include\cmsis_version.h)(0x6A49BE01)
+I (..\Drivers\CMSIS\Include\cmsis_compiler.h)(0x6A49BE01)
+I (..\Drivers\CMSIS\Include\cmsis_armclang.h)(0x6A49BE01)
+I (..\Drivers\CMSIS\Include\mpu_armv8.h)(0x6A49BE01)
+I (..\Drivers\CMSIS\Device\ST\STM32U5xx\Include\system_stm32u5xx.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\Legacy\stm32_hal_legacy.h)(0x6A49BE02)
+I (C:\Keil_v5\ARM\ARMCLANG\include\stddef.h)(0x6569B012)
+I (C:\Keil_v5\ARM\ARMCLANG\include\math.h)(0x6569B012)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_rcc_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_gpio.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_gpio_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_icache.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_dma.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_dma_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_cortex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_flash.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_flash_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_pwr.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_pwr_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_spi.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_spi_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_exti.h)(0x6A49BE02)
+F (../Drivers/STM32U5xx_HAL_Driver/Src/stm32u5xx_hal_spi.c)(0x6A49BE02)(-xc -std=c11 --target=arm-arm-none-eabi -mcpu=cortex-m33 -mfpu=fpv5-sp-d16 -mfloat-abi=hard -c-fno-rtti -funsigned-char -fshort-enums -fshort-wchar-gdwarf-4 -O3 -ffunction-sections -Wno-packed -Wno-missing-variable-declarations -Wno-missing-prototypes -Wno-missing-noreturn -Wno-sign-conversion -Wno-nonportable-include-path -Wno-reserved-id-macro -Wno-unused-macros -Wno-documentation-unknown-command -Wno-documentation -Wno-license-management -Wno-parentheses-equality -Wno-reserved-identifier -I ../Core/Inc -I ../Drivers/STM32U5xx_HAL_Driver/Inc -I ../Drivers/STM32U5xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32U5xx/Include -I ../Drivers/CMSIS/Include-I./RTE/_U575_SCREEN_COLOR-IC:/Users/Renton/AppData/Local/Arm/Packs/ARM/CMSIS/6.1.0/CMSIS/Core/Include-D__UVISION_VERSION="539" -D_RTE_ -DSTM32U575xx -D_RTE_ -DUSE_HAL_DRIVER -DSTM32U575xx-o u575_screen_color/stm32u5xx_hal_spi.o -MD)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal.h)(0x6A49BE02)
+I (..\Core\Inc\stm32u5xx_hal_conf.h)(0x6A436A0F)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_rcc.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_def.h)(0x6A49BE02)
+I (..\Drivers\CMSIS\Device\ST\STM32U5xx\Include\stm32u5xx.h)(0x6A49BE02)
+I (..\Drivers\CMSIS\Device\ST\STM32U5xx\Include\stm32u575xx.h)(0x6A49BE02)
+I (..\Drivers\CMSIS\Include\core_cm33.h)(0x6A49BE01)
+I (C:\Keil_v5\ARM\ARMCLANG\include\stdint.h)(0x6569B012)
+I (..\Drivers\CMSIS\Include\cmsis_version.h)(0x6A49BE01)
+I (..\Drivers\CMSIS\Include\cmsis_compiler.h)(0x6A49BE01)
+I (..\Drivers\CMSIS\Include\cmsis_armclang.h)(0x6A49BE01)
+I (..\Drivers\CMSIS\Include\mpu_armv8.h)(0x6A49BE01)
+I (..\Drivers\CMSIS\Device\ST\STM32U5xx\Include\system_stm32u5xx.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\Legacy\stm32_hal_legacy.h)(0x6A49BE02)
+I (C:\Keil_v5\ARM\ARMCLANG\include\stddef.h)(0x6569B012)
+I (C:\Keil_v5\ARM\ARMCLANG\include\math.h)(0x6569B012)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_rcc_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_gpio.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_gpio_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_icache.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_dma.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_dma_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_cortex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_flash.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_flash_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_pwr.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_pwr_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_spi.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_spi_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_exti.h)(0x6A49BE02)
+F (../Drivers/STM32U5xx_HAL_Driver/Src/stm32u5xx_hal_spi_ex.c)(0x6A49BE02)(-xc -std=c11 --target=arm-arm-none-eabi -mcpu=cortex-m33 -mfpu=fpv5-sp-d16 -mfloat-abi=hard -c-fno-rtti -funsigned-char -fshort-enums -fshort-wchar-gdwarf-4 -O3 -ffunction-sections -Wno-packed -Wno-missing-variable-declarations -Wno-missing-prototypes -Wno-missing-noreturn -Wno-sign-conversion -Wno-nonportable-include-path -Wno-reserved-id-macro -Wno-unused-macros -Wno-documentation-unknown-command -Wno-documentation -Wno-license-management -Wno-parentheses-equality -Wno-reserved-identifier -I ../Core/Inc -I ../Drivers/STM32U5xx_HAL_Driver/Inc -I ../Drivers/STM32U5xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32U5xx/Include -I ../Drivers/CMSIS/Include-I./RTE/_U575_SCREEN_COLOR-IC:/Users/Renton/AppData/Local/Arm/Packs/ARM/CMSIS/6.1.0/CMSIS/Core/Include-D__UVISION_VERSION="539" -D_RTE_ -DSTM32U575xx -D_RTE_ -DUSE_HAL_DRIVER -DSTM32U575xx-o u575_screen_color/stm32u5xx_hal_spi_ex.o -MD)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal.h)(0x6A49BE02)
+I (..\Core\Inc\stm32u5xx_hal_conf.h)(0x6A436A0F)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_rcc.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_def.h)(0x6A49BE02)
+I (..\Drivers\CMSIS\Device\ST\STM32U5xx\Include\stm32u5xx.h)(0x6A49BE02)
+I (..\Drivers\CMSIS\Device\ST\STM32U5xx\Include\stm32u575xx.h)(0x6A49BE02)
+I (..\Drivers\CMSIS\Include\core_cm33.h)(0x6A49BE01)
+I (C:\Keil_v5\ARM\ARMCLANG\include\stdint.h)(0x6569B012)
+I (..\Drivers\CMSIS\Include\cmsis_version.h)(0x6A49BE01)
+I (..\Drivers\CMSIS\Include\cmsis_compiler.h)(0x6A49BE01)
+I (..\Drivers\CMSIS\Include\cmsis_armclang.h)(0x6A49BE01)
+I (..\Drivers\CMSIS\Include\mpu_armv8.h)(0x6A49BE01)
+I (..\Drivers\CMSIS\Device\ST\STM32U5xx\Include\system_stm32u5xx.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\Legacy\stm32_hal_legacy.h)(0x6A49BE02)
+I (C:\Keil_v5\ARM\ARMCLANG\include\stddef.h)(0x6569B012)
+I (C:\Keil_v5\ARM\ARMCLANG\include\math.h)(0x6569B012)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_rcc_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_gpio.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_gpio_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_icache.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_dma.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_dma_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_cortex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_flash.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_flash_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_pwr.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_pwr_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_spi.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_spi_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_exti.h)(0x6A49BE02)
+F (../Core/Src/system_stm32u5xx.c)(0x6A436AFB)(-xc -std=c11 --target=arm-arm-none-eabi -mcpu=cortex-m33 -mfpu=fpv5-sp-d16 -mfloat-abi=hard -c-fno-rtti -funsigned-char -fshort-enums -fshort-wchar-gdwarf-4 -O3 -ffunction-sections -Wno-packed -Wno-missing-variable-declarations -Wno-missing-prototypes -Wno-missing-noreturn -Wno-sign-conversion -Wno-nonportable-include-path -Wno-reserved-id-macro -Wno-unused-macros -Wno-documentation-unknown-command -Wno-documentation -Wno-license-management -Wno-parentheses-equality -Wno-reserved-identifier -I ../Core/Inc -I ../Drivers/STM32U5xx_HAL_Driver/Inc -I ../Drivers/STM32U5xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32U5xx/Include -I ../Drivers/CMSIS/Include-I./RTE/_U575_SCREEN_COLOR-IC:/Users/Renton/AppData/Local/Arm/Packs/ARM/CMSIS/6.1.0/CMSIS/Core/Include-D__UVISION_VERSION="539" -D_RTE_ -DSTM32U575xx -D_RTE_ -DUSE_HAL_DRIVER -DSTM32U575xx-o u575_screen_color/system_stm32u5xx.o -MD)
+I (..\Drivers\CMSIS\Device\ST\STM32U5xx\Include\stm32u5xx.h)(0x6A49BE02)
+I (..\Drivers\CMSIS\Device\ST\STM32U5xx\Include\stm32u575xx.h)(0x6A49BE02)
+I (..\Drivers\CMSIS\Include\core_cm33.h)(0x6A49BE01)
+I (C:\Keil_v5\ARM\ARMCLANG\include\stdint.h)(0x6569B012)
+I (..\Drivers\CMSIS\Include\cmsis_version.h)(0x6A49BE01)
+I (..\Drivers\CMSIS\Include\cmsis_compiler.h)(0x6A49BE01)
+I (..\Drivers\CMSIS\Include\cmsis_armclang.h)(0x6A49BE01)
+I (..\Drivers\CMSIS\Include\mpu_armv8.h)(0x6A49BE01)
+I (..\Drivers\CMSIS\Device\ST\STM32U5xx\Include\system_stm32u5xx.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal.h)(0x6A49BE02)
+I (..\Core\Inc\stm32u5xx_hal_conf.h)(0x6A436A0F)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_rcc.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_def.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\Legacy\stm32_hal_legacy.h)(0x6A49BE02)
+I (C:\Keil_v5\ARM\ARMCLANG\include\stddef.h)(0x6569B012)
+I (C:\Keil_v5\ARM\ARMCLANG\include\math.h)(0x6569B012)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_rcc_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_gpio.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_gpio_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_icache.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_dma.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_dma_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_cortex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_flash.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_flash_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_pwr.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_pwr_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_spi.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_spi_ex.h)(0x6A49BE02)
+I (..\Drivers\STM32U5xx_HAL_Driver\Inc\stm32u5xx_hal_exti.h)(0x6A49BE02)

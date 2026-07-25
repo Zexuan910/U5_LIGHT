@@ -20,6 +20,7 @@ endif()
 
 # Set the project name
 set(CMAKE_PROJECT_NAME U5_LIGHT)
+option(UI_ASSET_PROGRAMMER "Build temporary firmware that writes UI assets to external Flash" OFF)
 
 # Enable compile command to ease indexing with e.g. clangd
 set(CMAKE_EXPORT_COMPILE_COMMANDS TRUE)
@@ -43,22 +44,98 @@ target_link_directories(${CMAKE_PROJECT_NAME} PRIVATE
 )
 
 # Add sources to executable
+message(STATUS "LCD selftest enabled: User/SelfTest/lcd_selftest.c")
 target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     User/Config/DEV_Config.c
+    User/Flash/ext_flash.c
     User/LCD/LCD_1in69.c
+    User/LCD/lcd_port.c
+    User/Memory/eeprom.c
+    User/Memory/motion_log.c
+    User/Memory/psram.c
+    User/Motion/imu_sensor.c
+    User/Motion/neai_rope_classifier.c
+    User/Motion/neai_run_classifier.c
+    User/Motion/neai_walk_classifier.c
+    User/Motion/rope_metrics.c
+    User/Motion/walk_metrics.c
+    User/Power/battery_monitor.c
     User/SelfTest/lcd_selftest.c
+    User/Touch/cst816t.c
+    User/Touch/touch_controller.c
+    User/UI/ui_asset_package.c
+    User/UI/ui_asset_programmer.c
+    User/UI/ui_assets.c
+    User/UI/ui_chinese_font.c
 )
+
+# NanoEdge AI Studio 5.2 deployment library (Cortex-M33, hard-float, short enums).
+add_library(NanoEdgeAI STATIC IMPORTED GLOBAL)
+set_target_properties(NanoEdgeAI PROPERTIES
+    IMPORTED_LOCATION "${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty/NanoEdgeAI/libneai.a"
+)
+add_library(NanoEdgeAIRun STATIC IMPORTED GLOBAL)
+set_target_properties(NanoEdgeAIRun PROPERTIES
+    IMPORTED_LOCATION "${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty/NanoEdgeAI_Run/libneai_run.a"
+)
+add_library(NanoEdgeAIRope STATIC IMPORTED GLOBAL)
+set_target_properties(NanoEdgeAIRope PROPERTIES
+    IMPORTED_LOCATION "${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty/NanoEdgeAI_Rope/libneai_rope.a"
+)
+set_source_files_properties(
+    User/Motion/neai_rope_classifier.c
+    User/Motion/neai_run_classifier.c
+    User/Motion/neai_walk_classifier.c
+    PROPERTIES
+    COMPILE_OPTIONS "-fshort-enums"
+)
+
+get_filename_component(ARM_TOOLCHAIN_BIN_DIR "${CMAKE_C_COMPILER}" DIRECTORY)
+find_program(ARM_OBJCOPY arm-none-eabi-objcopy
+    HINTS "${ARM_TOOLCHAIN_BIN_DIR}"
+    NO_DEFAULT_PATH
+)
+if(NOT ARM_OBJCOPY)
+    find_program(ARM_OBJCOPY arm-none-eabi-objcopy)
+endif()
+if(NOT ARM_OBJCOPY AND CMAKE_OBJCOPY)
+    set(ARM_OBJCOPY "${CMAKE_OBJCOPY}")
+endif()
+
+if(ARM_OBJCOPY)
+    add_custom_command(TARGET ${CMAKE_PROJECT_NAME} POST_BUILD
+        COMMAND "${ARM_OBJCOPY}" -O ihex
+                "$<TARGET_FILE:${CMAKE_PROJECT_NAME}>"
+                "$<TARGET_FILE_DIR:${CMAKE_PROJECT_NAME}>/${CMAKE_PROJECT_NAME}.hex"
+        COMMAND "${ARM_OBJCOPY}" -O binary
+                "$<TARGET_FILE:${CMAKE_PROJECT_NAME}>"
+                "$<TARGET_FILE_DIR:${CMAKE_PROJECT_NAME}>/${CMAKE_PROJECT_NAME}.bin"
+        COMMENT "Generating ${CMAKE_PROJECT_NAME}.hex and ${CMAKE_PROJECT_NAME}.bin"
+    )
+else()
+    message(WARNING "arm-none-eabi-objcopy was not found; flash tasks need ${CMAKE_PROJECT_NAME}.hex")
+endif()
 
 # Add include paths
 target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
     User/Config
+    User/Flash
     User/LCD
+    User/Memory
+    User/Motion
+    User/Power
     User/SelfTest
+    User/Touch
+    User/UI
+    ThirdParty/NanoEdgeAI
+    ThirdParty/NanoEdgeAI_Rope
+    ThirdParty/NanoEdgeAI_Run
 )
 
 # Add project symbols (macros)
 target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE
     # Add user defined symbols
+    UI_ASSET_PROGRAMMER=$<BOOL:${UI_ASSET_PROGRAMMER}>
 )
 
 # Remove wrong libob.a library dependency when using cpp files
@@ -67,6 +144,10 @@ list(REMOVE_ITEM CMAKE_C_IMPLICIT_LINK_LIBRARIES ob)
 # Add linked libraries
 target_link_libraries(${CMAKE_PROJECT_NAME}
     stm32cubemx
+    NanoEdgeAI
+    NanoEdgeAIRope
+    NanoEdgeAIRun
+    m
 
     # Add user defined libraries
 )
