@@ -8,6 +8,9 @@
 #define UI_CHINESE_GLYPH_HEIGHT 16U
 #define UI_CHINESE_GLYPH_ROW_BYTES 2U
 #define UI_CHINESE_GLYPH_GAP 2U
+#define UI_CHINESE_SMALL_GLYPH_WIDTH 8U
+#define UI_CHINESE_SMALL_GLYPH_HEIGHT 8U
+#define UI_CHINESE_SMALL_GLYPH_GAP 1U
 
 typedef struct {
   uint16_t codepoint;
@@ -204,4 +207,105 @@ void UIChinese_DrawCenteredInRect(UWORD x, UWORD y, UWORD width, const char* tex
   UWORD text_x = (text_width >= width) ? x : (UWORD)(x + ((width - text_width) / 2U));
 
   UIChinese_DrawText(text_x, y, text, color, scale);
+}
+
+UWORD UIChinese_SmallTextWidth(const char* text)
+{
+  const char* cursor = text;
+  UWORD count = 0U;
+
+  if (text == 0)
+  {
+    return 0U;
+  }
+
+  while (*cursor != '\0')
+  {
+    (void)UIChinese_NextCodepoint(&cursor);
+    count++;
+  }
+
+  return (count == 0U) ? 0U :
+         (UWORD)((count * UI_CHINESE_SMALL_GLYPH_WIDTH) +
+                 ((count - 1U) * UI_CHINESE_SMALL_GLYPH_GAP));
+}
+
+void UIChinese_DrawTextSmall(UWORD x, UWORD y, const char* text, UWORD color)
+{
+  const char* cursor = text;
+  UWORD glyph_index = 0U;
+
+  if (text == 0)
+  {
+    return;
+  }
+
+  while (*cursor != '\0')
+  {
+    uint32_t codepoint = UIChinese_NextCodepoint(&cursor);
+    const UBYTE* bitmap = UIChinese_FindGlyph(codepoint);
+
+    if (bitmap != 0)
+    {
+      UWORD row;
+      UWORD glyph_x = (UWORD)(x + (glyph_index *
+          (UI_CHINESE_SMALL_GLYPH_WIDTH + UI_CHINESE_SMALL_GLYPH_GAP)));
+
+      for (row = 0U; row < UI_CHINESE_SMALL_GLYPH_HEIGHT; row++)
+      {
+        UWORD col;
+
+        for (col = 0U; col < UI_CHINESE_SMALL_GLYPH_WIDTH; col++)
+        {
+          UWORD source_row;
+          UBYTE pixel_on = 0U;
+
+          for (source_row = (UWORD)(row * 2U);
+               source_row < (UWORD)((row * 2U) + 2U);
+               source_row++)
+          {
+            UWORD source_col;
+
+            for (source_col = (UWORD)(col * 2U);
+                 source_col < (UWORD)((col * 2U) + 2U);
+                 source_col++)
+            {
+              UBYTE row_byte = bitmap[(source_row * UI_CHINESE_GLYPH_ROW_BYTES) +
+                                      (source_col / 8U)];
+              if ((row_byte & (UBYTE)(0x80U >> (source_col % 8U))) != 0U)
+              {
+                pixel_on = 1U;
+              }
+            }
+          }
+
+          if (pixel_on != 0U)
+          {
+            UWORD pixel_x = (UWORD)(glyph_x + col);
+            UWORD pixel_y = (UWORD)(y + row);
+            LCD_1IN69_FillRect_FastStatic(pixel_x,
+                                          pixel_y,
+                                          pixel_x,
+                                          pixel_y,
+                                          color);
+          }
+        }
+      }
+    }
+
+    glyph_index++;
+  }
+}
+
+void UIChinese_DrawCenteredInRectSmall(UWORD x,
+                                       UWORD y,
+                                       UWORD width,
+                                       const char* text,
+                                       UWORD color)
+{
+  UWORD text_width = UIChinese_SmallTextWidth(text);
+  UWORD text_x = (text_width >= width) ? x :
+                 (UWORD)(x + ((width - text_width) / 2U));
+
+  UIChinese_DrawTextSmall(text_x, y, text, color);
 }

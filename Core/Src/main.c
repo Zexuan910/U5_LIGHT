@@ -152,12 +152,10 @@ static uint32_t ui_walk_distance_key = UI_WALK_FIELD_INVALID;
 static uint32_t ui_walk_now_speed_key = UI_WALK_FIELD_INVALID;
 static uint32_t ui_walk_avg_speed_key = UI_WALK_FIELD_INVALID;
 static uint32_t ui_walk_step_key = UI_WALK_FIELD_INVALID;
-static UBYTE ui_walk_ai_key = 0xFFU;
 static uint32_t ui_rope_count_key = UI_WALK_FIELD_INVALID;
 static uint32_t ui_rope_now_rate_key = UI_WALK_FIELD_INVALID;
 static uint32_t ui_rope_avg_rate_key = UI_WALK_FIELD_INVALID;
 static uint32_t ui_rope_peak_key = UI_WALK_FIELD_INVALID;
-static UBYTE ui_rope_status_key = 0xFFU;
 static UBYTE ui_exit_confirm_visible = 0U;
 static UIPage ui_exit_confirm_target = UI_PAGE_NAV;
 static UIClock ui_clock = {
@@ -208,9 +206,7 @@ static void UI_DrawSportActionButton(UWORD accent);
 static void UI_UpdateSportTimer(uint32_t now_ms, UBYTE force);
 static void UI_UpdateMotionMetrics(uint32_t now_ms);
 static void UI_UpdateMotionDataDisplay(UBYTE force);
-static void UI_UpdateMotionStatusField(UBYTE force);
 static void UI_UpdateRopeDataDisplay(UBYTE force);
-static void UI_UpdateRopeStatusField(UBYTE force);
 static void UI_SaveMotionSession(UBYTE sport, uint32_t duration_s);
 static void UI_StartExercise(uint32_t now_ms);
 static void UI_StopExercise(uint32_t now_ms);
@@ -836,8 +832,8 @@ static void UI_UpdateHomeBattery(UBYTE force)
   uint32_t show_mv = (HAL_GetTick() / UI_BATTERY_DISPLAY_TOGGLE_MS) & 1UL;
   uint32_t key = 0xFFFFFFFFUL;
   char text[16];
-  UWORD bg = LCD_RGB565(16U, 55U, 84U);
-  UWORD fg = LCD_RGB565(238U, 244U, 255U);
+  UWORD battery_bg = LCD_RGB565(224U, 244U, 232U);
+  UWORD battery_fg = LCD_RGB565(18U, 96U, 58U);
 
   if (ui_page != UI_PAGE_HOME)
   {
@@ -873,8 +869,8 @@ static void UI_UpdateHomeBattery(UBYTE force)
     return;
   }
 
-  LCD_FillBox(152U, 18U, 72U, 18U, bg);
-  LCD_DrawText(160U, 24U, text, fg, bg, 1U);
+  LCD_FillBox(148U, 16U, 80U, 20U, battery_bg);
+  LCD_DrawCenteredTextInRectTransparent(148U, 22U, 80U, text, battery_fg, 1U);
   ui_home_battery_key = key;
 }
 
@@ -1002,7 +998,14 @@ static void UI_DrawSportMainField(const char* value_text, const char* label_text
 
   LCD_FillBox(0U, 42U, 240U, 58U, main_bg);
   LCD_DrawCenteredTextInRectTransparent(0U, 48U, 240U, value_text, LCD_COLOR_BLACK, 3U);
-  UIChinese_DrawCenteredInRect(0U, 81U, 240U, label_text, muted, 1U);
+  if ((((const UBYTE*)label_text)[0] & 0x80U) != 0U)
+  {
+    UIChinese_DrawCenteredInRectSmall(0U, 83U, 240U, label_text, muted);
+  }
+  else
+  {
+    LCD_DrawCenteredTextInRectTransparent(0U, 83U, 240U, label_text, muted, 1U);
+  }
 }
 
 static void UI_DrawWalkDistanceField(uint32_t centi_km)
@@ -1020,8 +1023,8 @@ static void UI_DrawWalkSpeedField(UWORD x, UWORD y, UWORD w, UWORD bg, uint32_t 
   UWORD stat_text = LCD_RGB565(238U, 244U, 255U);
 
   UI_FormatWalkSpeed(speed_x10, text, sizeof(text));
-  LCD_FillBox(x, y, w, 16U, bg);
-  LCD_DrawText(x, y, text, stat_text, bg, 1U);
+  LCD_FillBox(x, y, w, 15U, bg);
+  LCD_DrawCenteredTextInRectTransparent(x, y, w, text, stat_text, 2U);
 }
 
 static void UI_DrawWalkStepField(uint32_t steps)
@@ -1031,8 +1034,8 @@ static void UI_DrawWalkStepField(uint32_t steps)
   UWORD stat_text = LCD_RGB565(238U, 244U, 255U);
 
   UI_FormatWalkStep(steps, text, sizeof(text));
-  LCD_FillBox(166U, 195U, 54U, 16U, box4);
-  LCD_DrawText(166U, 195U, text, stat_text, box4, 1U);
+  LCD_FillBox(158U, 190U, 70U, 15U, box4);
+  LCD_DrawCenteredTextInRectTransparent(158U, 190U, 70U, text, stat_text, 2U);
   ui_walk_step_key = steps;
 }
 
@@ -1078,102 +1081,18 @@ static void UI_UpdateMotionDataDisplay(UBYTE force)
   }
   if ((force != 0U) || (now_speed_key != ui_walk_now_speed_key))
   {
-    UI_DrawWalkSpeedField(20U, 195U, 42U, LCD_RGB565(22U, 104U, 63U), now_speed_key);
+    UI_DrawWalkSpeedField(12U, 190U, 62U, LCD_RGB565(22U, 104U, 63U), now_speed_key);
     ui_walk_now_speed_key = now_speed_key;
   }
   if ((force != 0U) || (avg_speed_key != ui_walk_avg_speed_key))
   {
-    UI_DrawWalkSpeedField(93U, 195U, 48U, LCD_RGB565(128U, 72U, 29U), avg_speed_key);
+    UI_DrawWalkSpeedField(85U, 190U, 70U, LCD_RGB565(128U, 72U, 29U), avg_speed_key);
     ui_walk_avg_speed_key = avg_speed_key;
   }
   if ((force != 0U) || (step_key != ui_walk_step_key))
   {
     UI_DrawWalkStepField(step_key);
   }
-}
-
-static void UI_UpdateMotionStatusField(UBYTE force)
-{
-  UBYTE ai_state;
-  UBYTE status_key;
-  const char* text;
-  UWORD box1 = LCD_RGB565(16U, 91U, 118U);
-  UWORD stat_text = LCD_RGB565(238U, 244U, 255U);
-
-  if (((ui_page != UI_PAGE_WALK) && (ui_page != UI_PAGE_RUN)) ||
-      (ui_exit_confirm_visible != 0U))
-  {
-    return;
-  }
-
-  if (ui_page == UI_PAGE_RUN)
-  {
-    if (IMU_Sensor_IsReady() == false)
-    {
-      status_key = 0x82U;
-      text = "错误";
-    }
-    else
-    {
-      ai_state = NeaiRunClassifier_GetUiState();
-      status_key = (UBYTE)(0x80U + ai_state);
-      if ((exercise_running[1] == 0U) &&
-          (ai_state != NEAI_RUN_UI_ERROR))
-      {
-        text = "就绪";
-      }
-      else if (ai_state == NEAI_RUN_UI_RUN)
-      {
-        text = "跑步";
-      }
-      else if (ai_state == NEAI_RUN_UI_STILL)
-      {
-        text = "静止";
-      }
-      else if (ai_state == NEAI_RUN_UI_ERROR)
-      {
-        text = "错误";
-      }
-      else
-      {
-        text = "等待";
-      }
-    }
-  }
-  else
-  {
-    ai_state = NeaiWalkClassifier_GetUiState();
-    status_key = ai_state;
-    if (ai_state == NEAI_WALK_UI_WALK)
-    {
-      text = "健走";
-    }
-    else if (ai_state == NEAI_WALK_UI_FAST_WALK)
-    {
-      text = "快走";
-    }
-    else if (ai_state == NEAI_WALK_UI_STILL)
-    {
-      text = "静止";
-    }
-    else if (ai_state == NEAI_WALK_UI_ERROR)
-    {
-      text = "错误";
-    }
-    else
-    {
-      text = "等待";
-    }
-  }
-
-  if ((force == 0U) && (ui_walk_ai_key == status_key))
-  {
-    return;
-  }
-
-  LCD_FillBox(130U, 116U, 90U, 20U, box1);
-  UIChinese_DrawCenteredInRect(124U, 118U, 104U, text, stat_text, 1U);
-  ui_walk_ai_key = status_key;
 }
 
 static void UI_UpdateRopeDataDisplay(UBYTE force)
@@ -1203,17 +1122,17 @@ static void UI_UpdateRopeDataDisplay(UBYTE force)
   if ((force != 0U) || (now_rate != ui_rope_now_rate_key))
   {
     (void)snprintf(text, sizeof(text), "%lu", (unsigned long)now_rate);
-    LCD_FillBox(20U, 195U, 42U, 16U, LCD_RGB565(22U, 104U, 63U));
-    LCD_DrawText(20U, 195U, text, stat_text,
-                 LCD_RGB565(22U, 104U, 63U), 1U);
+    LCD_FillBox(12U, 190U, 62U, 15U, LCD_RGB565(22U, 104U, 63U));
+    LCD_DrawCenteredTextInRectTransparent(12U, 190U, 62U, text,
+                                         stat_text, 2U);
     ui_rope_now_rate_key = now_rate;
   }
   if ((force != 0U) || (avg_rate != ui_rope_avg_rate_key))
   {
     (void)snprintf(text, sizeof(text), "%lu", (unsigned long)avg_rate);
-    LCD_FillBox(93U, 195U, 48U, 16U, LCD_RGB565(128U, 72U, 29U));
-    LCD_DrawText(93U, 195U, text, stat_text,
-                 LCD_RGB565(128U, 72U, 29U), 1U);
+    LCD_FillBox(85U, 190U, 70U, 15U, LCD_RGB565(128U, 72U, 29U));
+    LCD_DrawCenteredTextInRectTransparent(85U, 190U, 70U, text,
+                                         stat_text, 2U);
     ui_rope_avg_rate_key = avg_rate;
   }
   if ((force != 0U) || (peak_key != ui_rope_peak_key))
@@ -1221,66 +1140,11 @@ static void UI_UpdateRopeDataDisplay(UBYTE force)
     (void)snprintf(text, sizeof(text), "%lu.%lu",
                    (unsigned long)(peak_key / 10U),
                    (unsigned long)(peak_key % 10U));
-    LCD_FillBox(166U, 195U, 54U, 16U, LCD_RGB565(70U, 70U, 143U));
-    LCD_DrawText(166U, 195U, text, stat_text,
-                 LCD_RGB565(70U, 70U, 143U), 1U);
+    LCD_FillBox(158U, 190U, 70U, 15U, LCD_RGB565(70U, 70U, 143U));
+    LCD_DrawCenteredTextInRectTransparent(158U, 190U, 70U, text,
+                                         stat_text, 2U);
     ui_rope_peak_key = peak_key;
   }
-}
-
-static void UI_UpdateRopeStatusField(UBYTE force)
-{
-  uint8_t ai_state;
-  UBYTE status_key;
-  const char* text;
-  UWORD box1 = LCD_RGB565(16U, 91U, 118U);
-  UWORD stat_text = LCD_RGB565(238U, 244U, 255U);
-
-  if ((ui_page != UI_PAGE_ROPE) || (ui_exit_confirm_visible != 0U))
-  {
-    return;
-  }
-
-  ai_state = NeaiRopeClassifier_GetUiState();
-  if (IMU_Sensor_IsReady() == false)
-  {
-    status_key = 0x84U;
-    text = "错误";
-  }
-  else if ((exercise_running[2] == 0U) &&
-           (ai_state != NEAI_ROPE_UI_ERROR))
-  {
-    status_key = 0U;
-    text = "就绪";
-  }
-  else if (ai_state == NEAI_ROPE_UI_ROPE)
-  {
-    status_key = 1U;
-    text = "跳绳";
-  }
-  else if (ai_state == NEAI_ROPE_UI_STILL)
-  {
-    status_key = 2U;
-    text = "静止";
-  }
-  else if (ai_state == NEAI_ROPE_UI_ERROR)
-  {
-    status_key = 3U;
-    text = "错误";
-  }
-  else
-  {
-    status_key = 4U;
-    text = "等待";
-  }
-
-  if ((force == 0U) && (ui_rope_status_key == status_key))
-  {
-    return;
-  }
-  LCD_FillBox(130U, 116U, 90U, 20U, box1);
-  UIChinese_DrawCenteredInRect(124U, 118U, 104U, text, stat_text, 1U);
-  ui_rope_status_key = status_key;
 }
 
 static void UI_UpdateMotionMetrics(uint32_t now_ms)
@@ -1531,7 +1395,6 @@ static void UI_StartExercise(uint32_t now_ms)
     ui_walk_now_speed_key = UI_WALK_FIELD_INVALID;
     ui_walk_avg_speed_key = UI_WALK_FIELD_INVALID;
     ui_walk_step_key = UI_WALK_FIELD_INVALID;
-    ui_walk_ai_key = 0xFFU;
   }
   else
   {
@@ -1545,15 +1408,12 @@ static void UI_StartExercise(uint32_t now_ms)
     ui_rope_now_rate_key = UI_WALK_FIELD_INVALID;
     ui_rope_avg_rate_key = UI_WALK_FIELD_INVALID;
     ui_rope_peak_key = UI_WALK_FIELD_INVALID;
-    ui_rope_status_key = 0xFFU;
   }
 
   UI_DrawSportActionButton(UI_CurrentSportAccent());
   UI_UpdateSportTimer(now_ms, 1U);
   UI_UpdateMotionDataDisplay(1U);
-  UI_UpdateMotionStatusField(1U);
   UI_UpdateRopeDataDisplay(1U);
-  UI_UpdateRopeStatusField(1U);
   UI_UpdateSportHealthDisplay(now_ms, Gh3018GoodixHrSpo2_GetSnapshot(), 1U);
 }
 
@@ -1589,9 +1449,7 @@ static void UI_StopExercise(uint32_t now_ms)
   UI_DrawSportActionButton(UI_CurrentSportAccent());
   UI_UpdateSportTimer(now_ms, 1U);
   UI_UpdateMotionDataDisplay(1U);
-  UI_UpdateMotionStatusField(1U);
   UI_UpdateRopeDataDisplay(1U);
-  UI_UpdateRopeStatusField(1U);
   UI_UpdateSportHealthDisplay(now_ms, Gh3018GoodixHrSpo2_GetSnapshot(), 1U);
 }
 
@@ -1681,8 +1539,8 @@ static void UI_UpdateSportHealthDisplay(
   UBYTE sport;
   UBYTE bpm = 0U;
   UBYTE worn = 0U;
-  UWORD bg = LCD_RGB565(5U, 13U, 26U);
-  UWORD heart = LCD_RGB565(130U, 18U, 18U);
+  UWORD heart_bg = LCD_RGB565(255U, 229U, 232U);
+  UWORD heart = LCD_RGB565(160U, 20U, 40U);
   UWORD stat_text = LCD_RGB565(238U, 244U, 255U);
   UWORD stat_label = LCD_RGB565(142U, 158U, 178U);
   UWORD box1 = LCD_RGB565(16U, 91U, 118U);
@@ -1740,8 +1598,8 @@ static void UI_UpdateSportHealthDisplay(
     (void)snprintf(spo2_text, sizeof(spo2_text), "--%%");
   }
 
-  LCD_FillBox(152U, 14U, 82U, 18U, bg);
-  LCD_DrawText(157U, 18U, hr_text, heart, bg, 1U);
+  LCD_FillBox(152U, 10U, 82U, 22U, heart_bg);
+  LCD_DrawCenteredTextInRectTransparent(152U, 14U, 82U, hr_text, heart, 2U);
 
   LCD_FillBox(124U, 110U, 104U, 58U, box1);
   LCD_DrawText(132U, 119U, spo2_text, stat_text, box1, 2U);
@@ -1847,26 +1705,26 @@ static void UI_DrawSportDetail(const char* title_text, UWORD accent, const char*
   LCD_FillBox(12U, 110U, 104U, 58U, box0);
   UI_DrawSportTimeField(UI_ExerciseElapsedSeconds(now_ms));
   LCD_DrawCenteredTextInRectTransparent(12U, 137U, 104U, u0, stat_label, 1U);
-  UIChinese_DrawText(20U, 151U, l0, stat_label, 1U);
+  UIChinese_DrawCenteredInRectSmall(12U, 153U, 104U, l0, stat_label);
 
   LCD_FillBox(124U, 110U, 104U, 58U, box1);
   LCD_DrawText(132U, 119U, "--%", stat_text, box1, 2U);
   LCD_DrawText(132U, 149U, l1, stat_label, box1, 1U);
 
   LCD_FillBox(12U, 186U, 62U, 58U, box2);
-  LCD_DrawText(20U, 195U, v2, stat_text, box2, 1U);
-  LCD_DrawCenteredTextInRectTransparent(12U, 207U, 62U, u2, stat_label, 1U);
-  UIChinese_DrawText(20U, 224U, l2, stat_label, 1U);
+  LCD_DrawCenteredTextInRectTransparent(12U, 190U, 62U, v2, stat_text, 2U);
+  LCD_DrawCenteredTextInRectTransparent(12U, 209U, 62U, u2, stat_label, 1U);
+  UIChinese_DrawCenteredInRectSmall(12U, 227U, 62U, l2, stat_label);
 
   LCD_FillBox(85U, 186U, 70U, 58U, box3);
-  LCD_DrawText(93U, 195U, v3, stat_text, box3, 1U);
-  LCD_DrawCenteredTextInRectTransparent(85U, 207U, 70U, u3, stat_label, 1U);
-  UIChinese_DrawText(93U, 224U, l3, stat_label, 1U);
+  LCD_DrawCenteredTextInRectTransparent(85U, 190U, 70U, v3, stat_text, 2U);
+  LCD_DrawCenteredTextInRectTransparent(85U, 209U, 70U, u3, stat_label, 1U);
+  UIChinese_DrawCenteredInRectSmall(85U, 227U, 70U, l3, stat_label);
 
   LCD_FillBox(158U, 186U, 70U, 58U, box4);
-  LCD_DrawText(166U, 195U, v4, stat_text, box4, 1U);
-  LCD_DrawCenteredTextInRectTransparent(158U, 207U, 70U, u4, stat_label, 1U);
-  UIChinese_DrawText(166U, 224U, l4, stat_label, 1U);
+  LCD_DrawCenteredTextInRectTransparent(158U, 190U, 70U, v4, stat_text, 2U);
+  LCD_DrawCenteredTextInRectTransparent(158U, 209U, 70U, u4, stat_label, 1U);
+  UIChinese_DrawCenteredInRectSmall(158U, 227U, 70U, l4, stat_label);
 
   UI_DrawSportActionButton(accent);
   ui_sport_health_last_draw_tick = 0U;
@@ -2038,7 +1896,6 @@ static void UI_ShowPage(UIPage page)
                        "时间", "SPO2", "当前", "平均", "步数",
                        "mm:ss", "m/s", "m/s", "step");
     UI_UpdateMotionDataDisplay(1U);
-    UI_UpdateMotionStatusField(1U);
     break;
   case UI_PAGE_RUN:
     UI_DrawSportDetail("跑步", LCD_RGB565(255U, 106U, 61U), "0.00", "km",
@@ -2046,7 +1903,6 @@ static void UI_ShowPage(UIPage page)
                        "时间", "SPO2", "当前", "平均", "步数",
                        "mm:ss", "m/s", "m/s", "step");
     UI_UpdateMotionDataDisplay(1U);
-    UI_UpdateMotionStatusField(1U);
     break;
   case UI_PAGE_ROPE:
     UI_DrawSportDetail("跳绳", LCD_RGB565(108U, 140U, 255U), "0", "次",
@@ -2054,7 +1910,6 @@ static void UI_ShowPage(UIPage page)
                        "时间", "SPO2", "当前", "平均", "峰值",
                        "mm:ss", "rpm", "rpm", "rad/s");
     UI_UpdateRopeDataDisplay(1U);
-    UI_UpdateRopeStatusField(1U);
     break;
   case UI_PAGE_LOCK:
   default:
@@ -2703,9 +2558,7 @@ int main(void)
     UI_UpdateHomeBattery(0U);
     UI_UpdateSportTimer(now_ms, 0U);
     UI_UpdateMotionDataDisplay(0U);
-    UI_UpdateMotionStatusField(0U);
     UI_UpdateRopeDataDisplay(0U);
-    UI_UpdateRopeStatusField(0U);
 
     hrspo2 = Gh3018GoodixHrSpo2Service_Update(now_ms, hrspo2);
     UI_UpdateSportHealthDisplay(now_ms, hrspo2, 0U);
