@@ -54,7 +54,9 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     User/Motion/walk_metrics.c
     User/SelfTest/lcd_selftest.c
     User/GH3018/gh3018_comm.c
-    User/GH3018/gh3018_hrspo2.c
+    User/GH3018/gh3018_green_ppg_bpm.c
+    User/GH3018/gh3018_goodix_hrspo2.c
+    User/GH3018/gh3018_soft_i2c.c
     User/Touch/cst816t.c
     User/Touch/touch_controller.c
     User/UI/ui_asset_package.c

@@ -57,6 +57,10 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
+#define GH3018_I2C_SDA_Pin GPIO_PIN_3
+#define GH3018_I2C_SDA_GPIO_Port GPIOB
+#define GH3018_I2C_SCL_Pin GPIO_PIN_6
+#define GH3018_I2C_SCL_GPIO_Port GPIOB
 #define GH3018_RSTN_Pin GPIO_PIN_0
 #define GH3018_RSTN_GPIO_Port GPIOD
 #define GH3018_HBD_ON_Pin GPIO_PIN_1

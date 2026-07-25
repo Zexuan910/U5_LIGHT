@@ -26,7 +26,7 @@
 
 #include "DEV_Config.h"
 #include "gh3018_comm.h"
-#include "gh3018_hrspo2.h"
+#include "gh3018_goodix_hrspo2.h"
 #include "LCD_1in69.h"
 #include "cst816t.h"
 #include "imu_sensor.h"
@@ -49,6 +49,12 @@
 #define UI_EXERCISE_TIME_SCALE_NUM 2UL
 #define UI_EXERCISE_TIME_SCALE_DEN 1UL
 #define UI_WALK_FIELD_INVALID 0xFFFFFFFFUL
+#define GH3018_HRSPO2_POLL_INTERVAL_MS 50UL
+#define GH3018_HRSPO2_UI_REFRESH_MS 500UL
+#define GH3018_DIAGNOSTIC_SCREEN_ENABLE 0U
+#define HR_DISPLAY_MIN_BPM 40U
+#define HR_DISPLAY_MAX_BPM 150U
+#define HR_SPORT_HEALTH_REFRESH_MS 500UL
 
 /* USER CODE END PD */
 
@@ -58,8 +64,6 @@
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
-
-I2C_HandleTypeDef hi2c1;
 
 SPI_HandleTypeDef hspi1;
 I2C_HandleTypeDef hi2c2;
@@ -92,6 +96,11 @@ typedef struct {
   UBYTE wday;
 } UIClock;
 
+typedef enum {
+  HR_UI_IDLE = 0,
+  HR_UI_RUNNING
+} HrUiState;
+
 static UIPage ui_page = UI_PAGE_HOME;
 static UBYTE selected_sport = 0U;
 static UBYTE touch_pressed_prev = 0U;
@@ -113,6 +122,11 @@ static uint32_t exercise_start_ms[UI_SPORT_COUNT] = {0U, 0U, 0U};
 static uint32_t exercise_elapsed_seconds[UI_SPORT_COUNT] = {0U, 0U, 0U};
 static uint32_t ui_sport_time_key[UI_SPORT_COUNT] = {0xFFFFFFFFUL, 0xFFFFFFFFUL, 0xFFFFFFFFUL};
 static UBYTE exercise_running[UI_SPORT_COUNT] = {0U, 0U, 0U};
+static HrUiState hr_ui_state[UI_SPORT_COUNT] = {
+  HR_UI_IDLE,
+  HR_UI_IDLE,
+  HR_UI_IDLE
+};
 static WalkMetricsState walk_metrics_state;
 static WalkMetricsOutput walk_metrics_output;
 static uint32_t ui_walk_distance_key = UI_WALK_FIELD_INVALID;
@@ -125,13 +139,15 @@ static UIClock ui_clock = {2026U, 7U, 7U, 12U, 30U, 0U, 2U};
 static uint32_t ui_clock_tick_ms = 0U;
 static uint32_t ui_home_clock_key = 0xFFFFFFFFUL;
 static UBYTE screen_locked = 0U;
+static uint32_t gh3018_last_poll_tick = 0U;
+static uint32_t ui_hrspo2_last_draw_tick = 0U;
+static uint32_t ui_sport_health_last_draw_tick = 0U;
 
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
-static void MX_I2C1_Init(void);
 static void MX_I2C2_Init(void);
 static void MX_I2C3_Init(void);
 #if LCD_USE_HAL_SPI
@@ -154,13 +170,31 @@ static void UI_DrawSportActionButton(UWORD accent);
 static void UI_UpdateSportTimer(uint32_t now_ms, UBYTE force);
 static void UI_UpdateWalkMetrics(uint32_t now_ms);
 static void UI_UpdateWalkDataDisplay(UBYTE force);
+static void UI_StartExercise(uint32_t now_ms);
+static void UI_StopExercise(uint32_t now_ms);
+static void UI_HandleSportAction(
+    uint32_t now_ms,
+    const Gh3018GoodixHrSpo2Snapshot *snapshot);
+static void UI_UpdateSportHealthDisplay(
+    uint32_t now_ms,
+    const Gh3018GoodixHrSpo2Snapshot *snapshot,
+    UBYTE force);
 static void UI_ShowExitConfirm(UIPage target);
 static void UI_HideExitConfirm(void);
 static void UI_ConfirmExerciseExit(uint32_t now_ms);
-static void UI_CheckAutoLock(uint32_t now_ms);
 static void LCD_FillRectByRows(UWORD x0, UWORD y0, UWORD x1, UWORD y1, UWORD color);
 static TouchSample Touch_ReadSample(void);
-static void PrintHrSpo2Snapshot(const char *tag, const Gh3018HrSpo2Snapshot *snapshot);
+static const Gh3018GoodixHrSpo2Snapshot *Gh3018GoodixHrSpo2Service_Update(
+    uint32_t now_ms,
+    const Gh3018GoodixHrSpo2Snapshot *snapshot);
+static void UI_ShowHrSpo2Display(const Gh3018GoodixHrSpo2Snapshot *snapshot);
+static void UI_UpdateHrSpo2Display(
+    uint32_t now_ms,
+    const Gh3018GoodixHrSpo2Snapshot *snapshot,
+    UBYTE force);
+static void PrintHrSpo2Snapshot(
+    const char *tag,
+    const Gh3018GoodixHrSpo2Snapshot *snapshot);
 
 /* USER CODE END PFP */
 
@@ -626,21 +660,6 @@ static UBYTE UI_CurrentSportIndex(void)
   return (selected_sport < UI_SPORT_COUNT) ? selected_sport : 0U;
 }
 
-static UBYTE UI_AnyExerciseRunning(void)
-{
-  UBYTE i;
-
-  for (i = 0U; i < UI_SPORT_COUNT; ++i)
-  {
-    if (exercise_running[i] != 0U)
-    {
-      return 1U;
-    }
-  }
-
-  return 0U;
-}
-
 static uint32_t UI_ExerciseElapsedSeconds(uint32_t now_ms)
 {
   UBYTE sport = UI_CurrentSportIndex();
@@ -869,7 +888,64 @@ static void UI_UpdateWalkMetrics(uint32_t now_ms)
   }
 }
 
-static void UI_ToggleExercise(uint32_t now_ms)
+static uint8_t UI_SelectDisplayBpm(
+    const Gh3018GoodixHrSpo2Snapshot *snapshot)
+{
+  uint8_t bpm = 0U;
+
+  if (snapshot == NULL)
+  {
+    return 0U;
+  }
+
+  if ((snapshot->heartRate >= HR_DISPLAY_MIN_BPM) &&
+      (snapshot->heartRate <= HR_DISPLAY_MAX_BPM))
+  {
+    bpm = snapshot->heartRate;
+  }
+  else if ((snapshot->ppgHeartRate >= HR_DISPLAY_MIN_BPM) &&
+           (snapshot->ppgHeartRate <= HR_DISPLAY_MAX_BPM))
+  {
+    bpm = snapshot->ppgHeartRate;
+  }
+  else if ((snapshot->ppgDisplayedBpm >= HR_DISPLAY_MIN_BPM) &&
+           (snapshot->ppgDisplayedBpm <= HR_DISPLAY_MAX_BPM))
+  {
+    bpm = snapshot->ppgDisplayedBpm;
+  }
+
+  return bpm;
+}
+
+static void UI_StartExercise(uint32_t now_ms)
+{
+  UBYTE sport = UI_CurrentSportIndex();
+
+  (void)Gh3018GoodixHrSpo2_ResetPpgBpm();
+  (void)Gh3018GoodixHrSpo2_SetManualWear(1U);
+  exercise_elapsed_seconds[sport] = 0U;
+  exercise_start_ms[sport] = now_ms;
+  exercise_running[sport] = 1U;
+  hr_ui_state[sport] = HR_UI_RUNNING;
+  ui_sport_health_last_draw_tick = 0U;
+  if (sport == 0U)
+  {
+    WalkMetrics_Start(&walk_metrics_state, now_ms);
+    memset(&walk_metrics_output, 0, sizeof(walk_metrics_output));
+    (void)IMU_Sensor_ResetFifo();
+    ui_walk_distance_key = UI_WALK_FIELD_INVALID;
+    ui_walk_now_speed_key = UI_WALK_FIELD_INVALID;
+    ui_walk_avg_speed_key = UI_WALK_FIELD_INVALID;
+    ui_walk_step_key = UI_WALK_FIELD_INVALID;
+  }
+
+  UI_DrawSportActionButton(UI_CurrentSportAccent());
+  UI_UpdateSportTimer(now_ms, 1U);
+  UI_UpdateWalkDataDisplay(1U);
+  UI_UpdateSportHealthDisplay(now_ms, Gh3018GoodixHrSpo2_GetSnapshot(), 1U);
+}
+
+static void UI_StopExercise(uint32_t now_ms)
 {
   UBYTE sport = UI_CurrentSportIndex();
 
@@ -882,26 +958,34 @@ static void UI_ToggleExercise(uint32_t now_ms)
       WalkMetrics_Stop(&walk_metrics_state);
     }
   }
-  else
-  {
-    exercise_elapsed_seconds[sport] = 0U;
-    exercise_start_ms[sport] = now_ms;
-    exercise_running[sport] = 1U;
-    if (sport == 0U)
-    {
-      WalkMetrics_Start(&walk_metrics_state, now_ms);
-      memset(&walk_metrics_output, 0, sizeof(walk_metrics_output));
-      (void)IMU_Sensor_ResetFifo();
-      ui_walk_distance_key = UI_WALK_FIELD_INVALID;
-      ui_walk_now_speed_key = UI_WALK_FIELD_INVALID;
-      ui_walk_avg_speed_key = UI_WALK_FIELD_INVALID;
-      ui_walk_step_key = UI_WALK_FIELD_INVALID;
-    }
-  }
+
+  hr_ui_state[sport] = HR_UI_IDLE;
+  ui_sport_health_last_draw_tick = 0U;
+  (void)Gh3018GoodixHrSpo2_SetManualWear(0U);
+  (void)Gh3018GoodixHrSpo2_ResetPpgBpm();
 
   UI_DrawSportActionButton(UI_CurrentSportAccent());
   UI_UpdateSportTimer(now_ms, 1U);
   UI_UpdateWalkDataDisplay(1U);
+  UI_UpdateSportHealthDisplay(now_ms, Gh3018GoodixHrSpo2_GetSnapshot(), 1U);
+}
+
+static void UI_HandleSportAction(
+    uint32_t now_ms,
+    const Gh3018GoodixHrSpo2Snapshot *snapshot)
+{
+  UBYTE sport = UI_CurrentSportIndex();
+
+  (void)snapshot;
+
+  if ((hr_ui_state[sport] == HR_UI_RUNNING) ||
+      (exercise_running[sport] != 0U))
+  {
+    UI_StopExercise(now_ms);
+    return;
+  }
+
+  UI_StartExercise(now_ms);
 }
 
 static void UI_ShowExitConfirm(UIPage target)
@@ -936,7 +1020,7 @@ static void UI_ConfirmExerciseExit(uint32_t now_ms)
   ui_exit_confirm_visible = 0U;
   if (exercise_running[UI_CurrentSportIndex()] != 0U)
   {
-    UI_ToggleExercise(now_ms);
+    UI_StopExercise(now_ms);
   }
   UI_GotoPage(target);
 }
@@ -944,15 +1028,101 @@ static void UI_ConfirmExerciseExit(uint32_t now_ms)
 static void UI_DrawSportActionButton(UWORD accent)
 {
   UWORD bg = LCD_RGB565(5U, 13U, 26U);
+  const char *label = "START";
+  UBYTE sport = UI_CurrentSportIndex();
+
+  if ((hr_ui_state[sport] == HR_UI_RUNNING) ||
+      (exercise_running[sport] != 0U))
+  {
+    label = "STOP";
+  }
 
   LCD_FillBox(52U, 248U, 136U, 28U, accent);
   LCD_DrawCenteredTextInRect(52U,
                              254U,
                              136U,
-                             (exercise_running[UI_CurrentSportIndex()] != 0U) ? "STOP" : "START",
+                             label,
                              bg,
                              accent,
                              2U);
+}
+
+static void UI_UpdateSportHealthDisplay(
+    uint32_t now_ms,
+    const Gh3018GoodixHrSpo2Snapshot *snapshot,
+    UBYTE force)
+{
+  char hr_text[12];
+  char spo2_text[8];
+  UBYTE sport;
+  UBYTE bpm = 0U;
+  UBYTE worn = 0U;
+  UWORD bg = LCD_RGB565(5U, 13U, 26U);
+  UWORD heart = LCD_RGB565(130U, 18U, 18U);
+  UWORD stat_text = LCD_RGB565(238U, 244U, 255U);
+  UWORD stat_label = LCD_RGB565(142U, 158U, 178U);
+  UWORD box1 = LCD_RGB565(16U, 91U, 118U);
+
+  if ((UI_PageIsDetail(ui_page) == 0U) ||
+      (ui_exit_confirm_visible != 0U))
+  {
+    return;
+  }
+
+  if ((force == 0U) &&
+      ((now_ms - ui_sport_health_last_draw_tick) <
+       HR_SPORT_HEALTH_REFRESH_MS))
+  {
+    return;
+  }
+
+  sport = UI_CurrentSportIndex();
+  worn = ((hr_ui_state[sport] == HR_UI_RUNNING) ||
+          (exercise_running[sport] != 0U)) ? 1U : 0U;
+
+  if ((hr_ui_state[sport] == HR_UI_RUNNING) &&
+      (worn != 0U))
+  {
+    bpm = UI_SelectDisplayBpm(snapshot);
+    if (bpm != 0U)
+    {
+      (void)snprintf(hr_text,
+                     sizeof(hr_text),
+                     "HR %u",
+                     (unsigned int)bpm);
+    }
+    else
+    {
+      (void)snprintf(hr_text, sizeof(hr_text), "HR --");
+    }
+
+    if ((snapshot != NULL) &&
+        (snapshot->spo2Valid != 0U) &&
+        ((snapshot->spo2 == 98U) || (snapshot->spo2 == 99U)))
+    {
+      (void)snprintf(spo2_text,
+                     sizeof(spo2_text),
+                     "%u%%",
+                     (unsigned int)snapshot->spo2);
+    }
+    else
+    {
+      (void)snprintf(spo2_text, sizeof(spo2_text), "--%%");
+    }
+  }
+  else
+  {
+    (void)snprintf(hr_text, sizeof(hr_text), "HR --");
+    (void)snprintf(spo2_text, sizeof(spo2_text), "--%%");
+  }
+
+  LCD_FillBox(152U, 14U, 82U, 18U, bg);
+  LCD_DrawText(157U, 18U, hr_text, heart, bg, 1U);
+
+  LCD_FillBox(124U, 110U, 104U, 58U, box1);
+  LCD_DrawText(132U, 119U, spo2_text, stat_text, box1, 2U);
+  LCD_DrawText(132U, 149U, "SPO2", stat_label, box1, 1U);
+  ui_sport_health_last_draw_tick = now_ms;
 }
 
 static void UI_ShowHome(void)
@@ -1039,6 +1209,7 @@ static void UI_DrawSportDetail(const char* title_text, UWORD accent, const char*
   uint32_t now_ms = HAL_GetTick();
 
   (void)v0;
+  (void)v1;
 
   if (UIAssets_DrawBackground(UI_ASSET_SPORT_BG) == 0U)
   {
@@ -1046,7 +1217,8 @@ static void UI_DrawSportDetail(const char* title_text, UWORD accent, const char*
   }
   LCD_FillBox(0U, 0U, 240U, 5U, accent);
   LCD_DrawTextTransparent(12U, 14U, title_text, title, 2U);
-  LCD_DrawTextTransparent(157U, 18U, "HR 146", heart, 1U);
+  LCD_FillBox(152U, 14U, 82U, 18U, bg);
+  LCD_DrawText(157U, 18U, "HR --", heart, bg, 1U);
   UI_DrawSportMainField(main_value, main_label);
 
   LCD_FillBox(12U, 110U, 104U, 58U, box0);
@@ -1054,7 +1226,7 @@ static void UI_DrawSportDetail(const char* title_text, UWORD accent, const char*
   LCD_DrawText(20U, 149U, l0, stat_label, box0, 1U);
 
   LCD_FillBox(124U, 110U, 104U, 58U, box1);
-  LCD_DrawText(132U, 119U, v1, stat_text, box1, 2U);
+  LCD_DrawText(132U, 119U, "--%", stat_text, box1, 2U);
   LCD_DrawText(132U, 149U, l1, stat_label, box1, 1U);
 
   LCD_FillBox(12U, 186U, 62U, 58U, box2);
@@ -1070,6 +1242,152 @@ static void UI_DrawSportDetail(const char* title_text, UWORD accent, const char*
   LCD_DrawText(166U, 225U, l4, stat_label, box4, 1U);
 
   UI_DrawSportActionButton(accent);
+  ui_sport_health_last_draw_tick = 0U;
+  UI_UpdateSportHealthDisplay(
+      now_ms,
+      Gh3018GoodixHrSpo2_GetSnapshot(),
+      1U);
+}
+
+static void UI_ShowHrSpo2Display(const Gh3018GoodixHrSpo2Snapshot *snapshot)
+{
+  UWORD bg = LCD_RGB565(5U, 13U, 26U);
+  UWORD accent = LCD_RGB565(63U, 212U, 122U);
+  UWORD title = LCD_RGB565(238U, 244U, 255U);
+  UWORD muted = LCD_RGB565(142U, 158U, 178U);
+
+  LCD_FillScreenByRows(bg);
+  LCD_FillBox(0U, 0U, 240U, 5U, accent);
+  LCD_DrawTextTransparent(14U, 14U, "GH3018 DIAG", title, 2U);
+  LCD_DrawTextTransparent(14U, 40U, "GREEN RAW WEAR CHECK", muted, 1U);
+  ui_hrspo2_last_draw_tick = 0U;
+  UI_UpdateHrSpo2Display(HAL_GetTick(), snapshot, 1U);
+}
+
+static void UI_UpdateHrSpo2Display(
+    uint32_t now_ms,
+    const Gh3018GoodixHrSpo2Snapshot *snapshot,
+    UBYTE force)
+{
+  char line[48];
+  char bpm_text[12];
+  char spo2_text[12];
+  int32_t dark_delta;
+  UWORD bg = LCD_RGB565(5U, 13U, 26U);
+  UWORD panel = LCD_RGB565(18U, 44U, 82U);
+  UWORD panel2 = LCD_RGB565(16U, 91U, 118U);
+  UWORD stat_text = LCD_RGB565(238U, 244U, 255U);
+  UWORD label = LCD_RGB565(142U, 158U, 178U);
+  UWORD accent = LCD_RGB565(63U, 212U, 122U);
+  UWORD warn = LCD_RGB565(255U, 196U, 87U);
+
+  if (snapshot == NULL)
+  {
+    LCD_FillBox(14U, 70U, 212U, 32U, bg);
+    LCD_DrawTextTransparent(16U, 78U, "WAIT SENSOR INIT", warn, 1U);
+    return;
+  }
+
+  if ((force == 0U) &&
+      ((now_ms - ui_hrspo2_last_draw_tick) < GH3018_HRSPO2_UI_REFRESH_MS))
+  {
+    return;
+  }
+
+  dark_delta = -snapshot->ppgWearDcDelta;
+
+  if (snapshot->heartRateValid != 0U)
+  {
+    (void)snprintf(bpm_text, sizeof(bpm_text), "%uBPM",
+                   (unsigned int)snapshot->heartRate);
+  }
+  else
+  {
+    (void)snprintf(bpm_text, sizeof(bpm_text), "--BPM");
+  }
+
+  if (snapshot->spo2Valid != 0U)
+  {
+    (void)snprintf(spo2_text, sizeof(spo2_text), "%u%%",
+                   (unsigned int)snapshot->spo2);
+  }
+  else
+  {
+    (void)snprintf(spo2_text, sizeof(spo2_text), "--%%");
+  }
+
+  LCD_FillBox(14U, 64U, 100U, 46U, panel);
+  LCD_DrawText(22U, 72U, "PPG BPM", label, panel, 1U);
+  LCD_DrawText(22U, 90U, bpm_text, stat_text, panel, 2U);
+
+  LCD_FillBox(126U, 64U, 100U, 46U, panel2);
+  LCD_DrawText(134U, 72U, "SPO2 SIM", label, panel2, 1U);
+  LCD_DrawText(134U, 90U, spo2_text, stat_text, panel2, 2U);
+
+  LCD_FillBox(14U, 120U, 212U, 156U, bg);
+  (void)snprintf(line,
+                 sizeof(line),
+                 "ST %u ACT %u W %u/%u",
+                 (unsigned int)snapshot->status,
+                 (unsigned int)snapshot->measurementActive,
+                 (unsigned int)snapshot->wearingState,
+                 (unsigned int)snapshot->ppgWearingState);
+  LCD_DrawTextTransparent(16U, 122U, line, stat_text, 1U);
+
+  (void)snprintf(line,
+                 sizeof(line),
+                 "RAW %ld NZ %lu",
+                 (long)snapshot->rawPpg0,
+                 (unsigned long)snapshot->rawNonzeroCount);
+  LCD_DrawTextTransparent(16U, 140U, line, accent, 1U);
+
+  (void)snprintf(line,
+                 sizeof(line),
+                 "EMPTY %ld",
+                 (long)snapshot->ppgWearEmptyDc);
+  LCD_DrawTextTransparent(16U, 158U, line, stat_text, 1U);
+
+  (void)snprintf(line,
+                 sizeof(line),
+                 "DARK %ld TH %lu",
+                 (long)dark_delta,
+                 (unsigned long)snapshot->ppgWearDcThreshold);
+  LCD_DrawTextTransparent(16U, 176U, line, warn, 1U);
+
+  (void)snprintf(line,
+                 sizeof(line),
+                 "SCORE %u RSN %u AGE %lu",
+                 (unsigned int)snapshot->ppgWearScore,
+                 (unsigned int)snapshot->ppgWearReason,
+                 (unsigned long)snapshot->ppgRawAgeMs);
+  LCD_DrawTextTransparent(16U, 194U, line, stat_text, 1U);
+
+  (void)snprintf(line,
+                 sizeof(line),
+                 "AC %lu Q %u INT %lu",
+                 (unsigned long)snapshot->ppgAcRange,
+                 (unsigned int)snapshot->ppgSignalQuality,
+                 (unsigned long)snapshot->ppgIntervalAcceptedCount);
+  LCD_DrawTextTransparent(16U, 212U, line, label, 1U);
+
+  (void)snprintf(line,
+                 sizeof(line),
+                 "ACC %lu Z %lu J %lu",
+                 (unsigned long)snapshot->ppgRawAcceptedCount,
+                 (unsigned long)snapshot->ppgRawRejectedZeroCount,
+                 (unsigned long)snapshot->ppgRawRejectedJumpCount);
+  LCD_DrawTextTransparent(16U, 230U, line, label, 1U);
+
+  (void)snprintf(line,
+                 sizeof(line),
+                 "I2C %lu/%lu/%lu CUR %d",
+                 (unsigned long)snapshot->addressNackCount,
+                 (unsigned long)snapshot->dataNackCount,
+                 (unsigned long)snapshot->sclTimeoutCount,
+                 (int)snapshot->led0CurrentX10);
+  LCD_DrawTextTransparent(16U, 248U, line, label, 1U);
+
+  ui_hrspo2_last_draw_tick = now_ms;
 }
 
 static void UI_ShowLock(void)
@@ -1089,18 +1407,18 @@ static void UI_ShowPage(UIPage page)
     break;
   case UI_PAGE_WALK:
     UI_DrawSportDetail("WALK", LCD_RGB565(63U, 212U, 122U), "0.00", "KM",
-                       "00:00", "98%", "0.0", "0.0", "0",
+                       "00:00", "--%", "0.0", "0.0", "0",
                        "TIME", "SPO2", "NOW", "AVG", "STEP");
     UI_UpdateWalkDataDisplay(1U);
     break;
   case UI_PAGE_RUN:
     UI_DrawSportDetail("RUN", LCD_RGB565(255U, 106U, 61U), "4.32", "KM",
-                       "00:26", "97%", "3.6", "2.9", "84",
+                       "00:26", "--%", "3.6", "2.9", "84",
                        "TIME", "SPO2", "NOW", "AVG", "CAD");
     break;
   case UI_PAGE_ROPE:
     UI_DrawSportDetail("ROPE", LCD_RGB565(108U, 140U, 255U), "860", "COUNT",
-                       "00:12", "98%", "72", "68", "95",
+                       "00:12", "--%", "72", "68", "95",
                        "TIME", "SPO2", "NOW", "AVG", "KCAL");
     break;
   case UI_PAGE_LOCK:
@@ -1302,7 +1620,9 @@ static UBYTE UI_UseCoordinateRelease(uint32_t press_ms)
         (((touch_down_has_xy != 0U) && (touch_down_y >= 244U)) ||
          ((touch_last_has_xy != 0U) && (touch_last_y >= 244U))))
     {
-      UI_ToggleExercise(HAL_GetTick());
+      UI_HandleSportAction(
+          HAL_GetTick(),
+          Gh3018GoodixHrSpo2_GetSnapshot());
       return 1U;
     }
   }
@@ -1372,6 +1692,33 @@ static UBYTE UI_TryRealtimeSwipe(uint32_t now_ms)
 static UBYTE UI_PageIsDetail(UIPage page)
 {
   return ((page == UI_PAGE_WALK) || (page == UI_PAGE_RUN) || (page == UI_PAGE_ROPE)) ? 1U : 0U;
+}
+
+static const Gh3018GoodixHrSpo2Snapshot *Gh3018GoodixHrSpo2Service_Update(
+    uint32_t now_ms,
+    const Gh3018GoodixHrSpo2Snapshot *snapshot)
+{
+  if (snapshot == NULL)
+  {
+    snapshot = Gh3018GoodixHrSpo2_GetSnapshot();
+  }
+
+  if ((snapshot->measurementActive == 0U) &&
+      ((snapshot->status == GH3018_GOODIX_HRSPO2_STATUS_READY) ||
+       (snapshot->status == GH3018_GOODIX_HRSPO2_STATUS_STOPPED)))
+  {
+    gh3018_last_poll_tick = now_ms;
+    snapshot = Gh3018GoodixHrSpo2_Start();
+  }
+  else if ((snapshot->measurementActive != 0U) &&
+           ((now_ms - gh3018_last_poll_tick) >=
+            GH3018_HRSPO2_POLL_INTERVAL_MS))
+  {
+    gh3018_last_poll_tick = now_ms;
+    snapshot = Gh3018GoodixHrSpo2_Poll();
+  }
+
+  return snapshot;
 }
 
 static void UI_LockScreen(void)
@@ -1477,17 +1824,6 @@ static void UI_HandleTouchReleased(uint32_t now_ms, uint32_t press_ms)
   }
 }
 
-static void UI_CheckAutoLock(uint32_t now_ms)
-{
-  if ((screen_locked == 0U) &&
-      (ui_page != UI_PAGE_LOCK) &&
-      (UI_AnyExerciseRunning() == 0U) &&
-      ((now_ms - last_touch_ms) >= 15000U))
-  {
-    UI_LockScreen();
-  }
-}
-
 static TouchSample Touch_ReadSample(void)
 {
   TouchSample sample = {0U};
@@ -1547,7 +1883,6 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
-  MX_I2C1_Init();
   MX_I2C2_Init();
   MX_I2C3_Init();
 #if LCD_USE_HAL_SPI
@@ -1591,16 +1926,6 @@ int main(void)
     }
   }
 #endif
-  (void)UIAssets_Init();
-  LCD_ShowHelloBuaa();
-  {
-    uint32_t hello_start_ms = HAL_GetTick();
-    (void)UIAssets_Preload();
-    while ((HAL_GetTick() - hello_start_ms) < 5000UL)
-    {
-      HAL_Delay(20U);
-    }
-  }
   ui_page = UI_PAGE_HOME;
   selected_sport = 0U;
   screen_locked = 0U;
@@ -1610,15 +1935,47 @@ int main(void)
   last_touch_ms = HAL_GetTick();
   touch_last_active_ms = last_touch_ms;
   touch_down_ms = last_touch_ms;
-  UI_ShowPage(ui_page);
+  if (GH3018_DIAGNOSTIC_SCREEN_ENABLE != 0U)
+  {
+    UI_ShowHrSpo2Display(NULL);
+  }
+  else
+  {
+    (void)UIAssets_Init();
+    LCD_ShowHelloBuaa();
+    {
+      uint32_t hello_start_ms = HAL_GetTick();
+      (void)UIAssets_Preload();
+      while ((HAL_GetTick() - hello_start_ms) < 5000UL)
+      {
+        HAL_Delay(20U);
+      }
+    }
+    UI_ShowPage(ui_page);
+  }
 
-  printf("\r\nU575 wzx UI with health sensors validation start\r\n");
-  const Gh3018HrSpo2Snapshot *hrspo2 = Gh3018HrSpo2_Init();
+  printf("\r\nU575 wzx UI with GH3018 green PPG BPM validation start\r\n");
+  const Gh3018GoodixHrSpo2Snapshot *hrspo2 = Gh3018GoodixHrSpo2_Init();
   PrintHrSpo2Snapshot("init", hrspo2);
-  uint32_t lastPollTick = HAL_GetTick();
+  hrspo2 = Gh3018GoodixHrSpo2_Start();
+  if (GH3018_DIAGNOSTIC_SCREEN_ENABLE != 0U)
+  {
+    UI_ShowHrSpo2Display(hrspo2);
+  }
+  PrintHrSpo2Snapshot("start", hrspo2);
   uint32_t lastLogTick = HAL_GetTick();
-  Gh3018HrSpo2Status lastStatus = hrspo2->status;
-  uint32_t lastRefreshCount = hrspo2->resultRefreshCount;
+  Gh3018GoodixHrSpo2Status lastStatus = hrspo2->status;
+  uint32_t lastResultRefreshCount = hrspo2->resultRefreshCount;
+  uint8_t lastPpgHeartRate = hrspo2->ppgHeartRate;
+  uint8_t lastPpgHeartRateValid = hrspo2->ppgHeartRateValid;
+  uint8_t lastWearingState = hrspo2->wearingState;
+  uint8_t lastSpo2 = hrspo2->spo2;
+  uint8_t lastSpo2Valid = hrspo2->spo2Valid;
+  int8_t lastCalcRet = hrspo2->hbdCalcRet;
+  int8_t lastSetCurrentRet = hrspo2->hbdSetCurrentRet;
+  int16_t lastLed0CurrentX10 = hrspo2->led0CurrentX10;
+  int16_t lastLed1CurrentX10 = hrspo2->led1CurrentX10;
+  gh3018_last_poll_tick = HAL_GetTick();
 
   /* USER CODE END 2 */
 
@@ -1633,17 +1990,94 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
+    uint8_t shouldLog = 0U;
+    if (GH3018_DIAGNOSTIC_SCREEN_ENABLE != 0U)
+    {
+      hrspo2 = Gh3018GoodixHrSpo2Service_Update(now_ms, hrspo2);
+      if ((hrspo2->status != lastStatus) ||
+          (hrspo2->resultRefreshCount != lastResultRefreshCount) ||
+          (hrspo2->ppgHeartRate != lastPpgHeartRate) ||
+          (hrspo2->ppgHeartRateValid != lastPpgHeartRateValid) ||
+          (hrspo2->wearingState != lastWearingState) ||
+          (hrspo2->spo2 != lastSpo2) ||
+          (hrspo2->spo2Valid != lastSpo2Valid) ||
+          (hrspo2->hbdCalcRet != lastCalcRet) ||
+          (hrspo2->hbdSetCurrentRet != lastSetCurrentRet) ||
+          (hrspo2->led0CurrentX10 != lastLed0CurrentX10) ||
+          (hrspo2->led1CurrentX10 != lastLed1CurrentX10))
+      {
+        shouldLog = 1U;
+      }
+
+      UI_UpdateHrSpo2Display(now_ms, hrspo2, shouldLog);
+
+      if ((shouldLog != 0U) || ((now_ms - lastLogTick) >= 1000U))
+      {
+        PrintHrSpo2Snapshot("hrspo2", hrspo2);
+        lastStatus = hrspo2->status;
+        lastResultRefreshCount = hrspo2->resultRefreshCount;
+        lastPpgHeartRate = hrspo2->ppgHeartRate;
+        lastPpgHeartRateValid = hrspo2->ppgHeartRateValid;
+        lastWearingState = hrspo2->wearingState;
+        lastSpo2 = hrspo2->spo2;
+        lastSpo2Valid = hrspo2->spo2Valid;
+        lastCalcRet = hrspo2->hbdCalcRet;
+        lastSetCurrentRet = hrspo2->hbdSetCurrentRet;
+        lastLed0CurrentX10 = hrspo2->led0CurrentX10;
+        lastLed1CurrentX10 = hrspo2->led1CurrentX10;
+        lastLogTick = now_ms;
+      }
+
+      HAL_Delay(20U);
+      continue;
+    }
+
     UI_ClockUpdate(now_ms);
     UI_UpdateWalkMetrics(now_ms);
     UI_UpdateHomeClock(0U);
     UI_UpdateSportTimer(now_ms, 0U);
     UI_UpdateWalkDataDisplay(0U);
 
+    hrspo2 = Gh3018GoodixHrSpo2Service_Update(now_ms, hrspo2);
+    UI_UpdateSportHealthDisplay(now_ms, hrspo2, 0U);
+    if ((hrspo2->status != lastStatus) ||
+        (hrspo2->resultRefreshCount != lastResultRefreshCount) ||
+        (hrspo2->ppgHeartRate != lastPpgHeartRate) ||
+        (hrspo2->ppgHeartRateValid != lastPpgHeartRateValid) ||
+        (hrspo2->wearingState != lastWearingState) ||
+        (hrspo2->spo2 != lastSpo2) ||
+        (hrspo2->spo2Valid != lastSpo2Valid) ||
+        (hrspo2->hbdCalcRet != lastCalcRet) ||
+        (hrspo2->hbdSetCurrentRet != lastSetCurrentRet) ||
+        (hrspo2->led0CurrentX10 != lastLed0CurrentX10) ||
+        (hrspo2->led1CurrentX10 != lastLed1CurrentX10))
+    {
+      shouldLog = 1U;
+    }
+
+    if ((shouldLog != 0U) || ((now_ms - lastLogTick) >= 1000U))
+    {
+      PrintHrSpo2Snapshot("hrspo2", hrspo2);
+      lastStatus = hrspo2->status;
+      lastResultRefreshCount = hrspo2->resultRefreshCount;
+      lastPpgHeartRate = hrspo2->ppgHeartRate;
+      lastPpgHeartRateValid = hrspo2->ppgHeartRateValid;
+      lastWearingState = hrspo2->wearingState;
+      lastSpo2 = hrspo2->spo2;
+      lastSpo2Valid = hrspo2->spo2Valid;
+      lastCalcRet = hrspo2->hbdCalcRet;
+      lastSetCurrentRet = hrspo2->hbdSetCurrentRet;
+      lastLed0CurrentX10 = hrspo2->led0CurrentX10;
+      lastLed1CurrentX10 = hrspo2->led1CurrentX10;
+      lastLogTick = now_ms;
+    }
+
     if ((raw_touch_pressed != 0U) && (touch_sample.has_xy != 0U))
     {
       touch_last_active_ms = now_ms;
     }
-    else if ((raw_touch_pressed != 0U) && ((now_ms - touch_last_active_ms) >= 180U))
+    else if ((raw_touch_pressed != 0U) &&
+             ((now_ms - touch_last_active_ms) >= 180U))
     {
       raw_touch_pressed = 0U;
       touch_pressed = 0U;
@@ -1744,28 +2178,7 @@ int main(void)
       UI_HandleTouchReleased(now_ms, press_ms);
     }
 
-    UI_CheckAutoLock(now_ms);
     touch_pressed_prev = touch_pressed;
-
-    uint8_t shouldLog = 0U;
-    if ((now_ms - lastPollTick) >= 50U)
-    {
-      lastPollTick = now_ms;
-      hrspo2 = Gh3018HrSpo2_Poll();
-      if ((hrspo2->status != lastStatus) ||
-          (hrspo2->resultRefreshCount != lastRefreshCount))
-      {
-        shouldLog = 1U;
-      }
-    }
-
-    if ((shouldLog != 0U) || ((now_ms - lastLogTick) >= 1000U))
-    {
-      PrintHrSpo2Snapshot("poll", hrspo2);
-      lastStatus = hrspo2->status;
-      lastRefreshCount = hrspo2->resultRefreshCount;
-      lastLogTick = now_ms;
-    }
     HAL_Delay(20U);
   }
   /* USER CODE END 3 */
@@ -1789,8 +2202,10 @@ void SystemClock_Config(void)
 
   /** Initializes the CPU, AHB and APB buses clocks
   */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE|RCC_OSCILLATORTYPE_HSI;
   RCC_OscInitStruct.HSEState = RCC_HSE_ON;
+  RCC_OscInitStruct.HSIState = RCC_HSI_ON;
+  RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
   RCC_OscInitStruct.PLL.PLLMBOOST = RCC_PLLMBOOST_DIV1;
@@ -1821,50 +2236,6 @@ void SystemClock_Config(void)
   {
     Error_Handler();
   }
-}
-
-/**
-  * @brief I2C1 Initialization Function
-  * @param None
-  * @retval None
-  */
-static void MX_I2C1_Init(void)
-{
-
-  /* USER CODE BEGIN I2C1_Init 0 */
-
-  /* USER CODE END I2C1_Init 0 */
-
-  /* USER CODE BEGIN I2C1_Init 1 */
-
-  /* USER CODE END I2C1_Init 1 */
-  hi2c1.Instance = I2C1;
-  hi2c1.Init.Timing = 0x00000E14;
-  hi2c1.Init.OwnAddress1 = 0;
-  hi2c1.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
-  hi2c1.Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;
-  hi2c1.Init.OwnAddress2 = 0;
-  hi2c1.Init.OwnAddress2Masks = I2C_OA2_NOMASK;
-  hi2c1.Init.GeneralCallMode = I2C_GENERALCALL_DISABLE;
-  hi2c1.Init.NoStretchMode = I2C_NOSTRETCH_DISABLE;
-  if (HAL_I2C_Init(&hi2c1) != HAL_OK)
-  {
-    Error_Handler();
-  }
-
-  if (HAL_I2CEx_ConfigAnalogFilter(&hi2c1, I2C_ANALOGFILTER_ENABLE) != HAL_OK)
-  {
-    Error_Handler();
-  }
-
-  if (HAL_I2CEx_ConfigDigitalFilter(&hi2c1, 0) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /* USER CODE BEGIN I2C1_Init 2 */
-
-  /* USER CODE END I2C1_Init 2 */
-
 }
 
 /**
@@ -2027,12 +2398,16 @@ static void MX_GPIO_Init(void)
 
   /* GPIO Ports Clock Enable */
   __HAL_RCC_GPIOA_CLK_ENABLE();
+  __HAL_RCC_GPIOB_CLK_ENABLE();
   __HAL_RCC_GPIOE_CLK_ENABLE();
   __HAL_RCC_GPIOC_CLK_ENABLE();
   __HAL_RCC_GPIOD_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GH3018_RSTN_GPIO_Port, GH3018_RSTN_Pin, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(GPIOD, GH3018_RSTN_Pin|GH3018_HBD_ON_Pin, GPIO_PIN_SET);
+
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(GPIOB, GH3018_I2C_SDA_Pin|GH3018_I2C_SCL_Pin, GPIO_PIN_SET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOE, LCD_RST_Pin|LCD_CS_Pin|LCD_DC_Pin|TP_RST_Pin, GPIO_PIN_RESET);
@@ -2040,15 +2415,22 @@ static void MX_GPIO_Init(void)
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(LCD_BLK_GPIO_Port, LCD_BLK_Pin, GPIO_PIN_RESET);
 
-  /*Configure GPIO pin : GH3018_RSTN_Pin */
-  GPIO_InitStruct.Pin = GH3018_RSTN_Pin;
+  /*Configure GPIO pins : GH3018_RSTN_Pin GH3018_HBD_ON_Pin */
+  GPIO_InitStruct.Pin = GH3018_RSTN_Pin|GH3018_HBD_ON_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GH3018_RSTN_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : GH3018_HBD_ON_Pin GH3018_INT_Pin */
-  GPIO_InitStruct.Pin = GH3018_HBD_ON_Pin|GH3018_INT_Pin;
+  /*Configure GPIO pins : GH3018_I2C_SDA_Pin GH3018_I2C_SCL_Pin */
+  GPIO_InitStruct.Pin = GH3018_I2C_SDA_Pin|GH3018_I2C_SCL_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_OD;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : GH3018_INT_Pin */
+  GPIO_InitStruct.Pin = GH3018_INT_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
@@ -2127,33 +2509,149 @@ int __io_putchar(int ch)
   return ch;
 }
 
-static void PrintHrSpo2Snapshot(const char *tag, const Gh3018HrSpo2Snapshot *snapshot)
+static void PrintHrSpo2Snapshot(
+    const char *tag,
+    const Gh3018GoodixHrSpo2Snapshot *snapshot)
 {
-  printf("[%s] status=%s comm=%d init=%d start=%d calc=%d int=%u pin_int=%u hbd_on=%u "
-         "poll=%lu calc_cnt=%lu refresh=%lu nodata=%lu raw_len=%u hr=%u hr_conf=%u "
-         "spo2=%u spo2_conf=%u wear=%u invalid=%ld i2c_w=%lu i2c_r=%lu\r\n",
+  if (snapshot == NULL)
+  {
+    printf("[%s] hrspo2 snapshot null\r\n", tag);
+    return;
+  }
+
+  printf("[%s] st=%s active=%u sid=%lu comm=%d soft=%d "
+         "ret=%d/%d/%d/%d/%d pin=%u/%u/%u int=%u "
+         "map=%u cfg_step=%u/%u cfg_x10=%d/%d led_x10=%d/%d "
+         "cnt=%lu/%lu/%lu/%lu sess=%lu/%lu/%lu/%lu "
+         "raw=%u fifo=%u ppg=%ld/%ld max=%lu/%lu probe=%lu nz=%lu chg=%lu empty=%lu full=%lu "
+         "ppg_hr=%u/%u/v%u q=%u "
+         "ppg_auto bpm=%u score=%u v%u lag=%u best=%u/%u second=%u/%u reject=%u "
+         "freeze=%u drift=%ld disp=%u pend=%u "
+         "smp=%lu peak=%lu ac=%lu int_ms=%u "
+         "ppg_diag cand=%lu acc_int=%lu short=%lu long=%lu outlier=%lu rej_ms=%u thr=%lu "
+         "ppg_filter acc=%lu zero=%lu jump=%lu resync=%lu last=%ld thr=%lu "
+         "wear_dc empty=%ld delta=%ld thr=%lu "
+         "ppg_wear state=%u score=%u reason=%u stable=%lu raw_age=%lu peak_age=%lu "
+         "cand_age=%lu int_age=%lu int_exp=%lu pend_exp=%lu bpm_gate=%u "
+         "goodix_hr=%u/%u/v%u gwear=%u spo2=%u/%u/v%u sim=%u sw=%lu next=%lu wear=%u r=%u lvl=%ld invalid=%ld "
+         "irq=%lu/%lu/%lu/%lu/%lu/%lu/%lu "
+         "i2c=%lu/%lu recovery=%lu nack=%lu/%lu scl_to=%lu\r\n",
          tag,
-         Gh3018HrSpo2_StatusName(snapshot->status),
+         Gh3018GoodixHrSpo2_StatusName(snapshot->status),
+         (unsigned int)snapshot->measurementActive,
+         (unsigned long)snapshot->sessionId,
          (int)snapshot->commStatus,
+         (int)snapshot->lastSoftI2cStatus,
          (int)snapshot->hbdSimpleInitRet,
          (int)snapshot->hbdHrSpo2StartRet,
+         (int)snapshot->hbdSetCurrentRet,
+         (int)snapshot->hbdGetCurrentRet,
          (int)snapshot->hbdCalcRet,
-         (unsigned int)snapshot->intStatus,
-         (unsigned int)snapshot->intLevel,
+         (unsigned int)snapshot->rstnLevel,
          (unsigned int)snapshot->hbdOnLevel,
+         (unsigned int)snapshot->intLevel,
+         (unsigned int)snapshot->intStatus,
+         (unsigned int)snapshot->ledLogicMap,
+         (unsigned int)snapshot->channel0CurrentStep,
+         (unsigned int)snapshot->channel1CurrentStep,
+         (int)snapshot->channel0CurrentX10,
+         (int)snapshot->channel1CurrentX10,
+         (int)snapshot->led0CurrentX10,
+         (int)snapshot->led1CurrentX10,
          (unsigned long)snapshot->pollCount,
          (unsigned long)snapshot->calcCount,
          (unsigned long)snapshot->resultRefreshCount,
          (unsigned long)snapshot->noDataCount,
+         (unsigned long)snapshot->sessionPollCount,
+         (unsigned long)snapshot->sessionCalcCount,
+         (unsigned long)snapshot->sessionResultRefreshCount,
+         (unsigned long)snapshot->sessionNoDataCount,
          (unsigned int)snapshot->rawDataLen,
-         (unsigned int)snapshot->heartRate,
-         (unsigned int)snapshot->heartRateConfidence,
+         (unsigned int)snapshot->rawFifoCount,
+         (long)snapshot->rawPpg0,
+         (long)snapshot->rawPpg1,
+         (unsigned long)snapshot->rawMaxPpg0,
+         (unsigned long)snapshot->rawMaxPpg1,
+         (unsigned long)snapshot->rawProbeCount,
+         (unsigned long)snapshot->rawNonzeroCount,
+         (unsigned long)snapshot->rawChangeCount,
+         (unsigned long)snapshot->rawEmptyCount,
+         (unsigned long)snapshot->rawBufferFullCount,
+         (unsigned int)snapshot->ppgHeartRate,
+         (unsigned int)snapshot->ppgHeartRateConfidence,
+         (unsigned int)snapshot->ppgHeartRateValid,
+         (unsigned int)snapshot->ppgSignalQuality,
+         (unsigned int)snapshot->ppgAutoCorrBpm,
+         (unsigned int)snapshot->ppgAutoCorrScore,
+         (unsigned int)snapshot->ppgAutoCorrValid,
+         (unsigned int)snapshot->ppgAutoCorrLag,
+         (unsigned int)snapshot->ppgAutoCorrBestLag,
+         (unsigned int)snapshot->ppgAutoCorrBestScore,
+         (unsigned int)snapshot->ppgAutoCorrSecondLag,
+         (unsigned int)snapshot->ppgAutoCorrSecondScore,
+         (unsigned int)snapshot->ppgAutoCorrRejectReason,
+         (unsigned int)snapshot->ppgMotionFreeze,
+         (long)snapshot->ppgDcDrift1s,
+         (unsigned int)snapshot->ppgDisplayedBpm,
+         (unsigned int)snapshot->ppgPendingBpm,
+         (unsigned long)snapshot->ppgSampleCount,
+         (unsigned long)snapshot->ppgPeakCount,
+         (unsigned long)snapshot->ppgAcRange,
+         (unsigned int)snapshot->ppgLastIntervalMs,
+         (unsigned long)snapshot->ppgCandidatePeakCount,
+         (unsigned long)snapshot->ppgIntervalAcceptedCount,
+         (unsigned long)snapshot->ppgIntervalTooShortCount,
+         (unsigned long)snapshot->ppgIntervalTooLongCount,
+         (unsigned long)snapshot->ppgIntervalRejectedOutlierCount,
+         (unsigned int)snapshot->ppgLastRejectedIntervalMs,
+         (unsigned long)snapshot->ppgPeakThreshold,
+         (unsigned long)snapshot->ppgRawAcceptedCount,
+         (unsigned long)snapshot->ppgRawRejectedZeroCount,
+         (unsigned long)snapshot->ppgRawRejectedJumpCount,
+         (unsigned long)snapshot->ppgRawResyncCount,
+         (long)snapshot->ppgLastAcceptedRaw,
+         (unsigned long)snapshot->ppgRawJumpThreshold,
+         (long)snapshot->ppgWearEmptyDc,
+         (long)snapshot->ppgWearDcDelta,
+         (unsigned long)snapshot->ppgWearDcThreshold,
+         (unsigned int)snapshot->ppgWearingState,
+         (unsigned int)snapshot->ppgWearScore,
+         (unsigned int)snapshot->ppgWearReason,
+         (unsigned long)snapshot->ppgWearStableMs,
+         (unsigned long)snapshot->ppgRawAgeMs,
+         (unsigned long)snapshot->ppgPeakAgeMs,
+         (unsigned long)snapshot->ppgCandidateAgeMs,
+         (unsigned long)snapshot->ppgIntervalAgeMs,
+         (unsigned long)snapshot->ppgIntervalExpiredCount,
+         (unsigned long)snapshot->ppgPendingPeakExpiredCount,
+         (unsigned int)snapshot->ppgBpmGateReason,
+         (unsigned int)snapshot->goodixHeartRate,
+         (unsigned int)snapshot->goodixHeartRateConfidence,
+         (unsigned int)snapshot->goodixHeartRateValid,
+         (unsigned int)snapshot->goodixWearingState,
          (unsigned int)snapshot->spo2,
          (unsigned int)snapshot->spo2Confidence,
+         (unsigned int)snapshot->spo2Valid,
+         (unsigned int)snapshot->spo2Simulated,
+         (unsigned long)snapshot->spo2SimSwitchCount,
+         (unsigned long)snapshot->spo2SimNextSwitchMs,
          (unsigned int)snapshot->wearingState,
+         (unsigned int)snapshot->spo2RValue,
+         (long)snapshot->spo2ValidLevel,
          (long)snapshot->spo2InvalidFlag,
+         (unsigned long)snapshot->intChipResetCount,
+         (unsigned long)snapshot->intNewDataCount,
+         (unsigned long)snapshot->intFifoWatermarkCount,
+         (unsigned long)snapshot->intFifoFullCount,
+         (unsigned long)snapshot->intWearCount,
+         (unsigned long)snapshot->intUnwearCount,
+         (unsigned long)snapshot->intInvalidCount,
          (unsigned long)snapshot->i2cWriteCount,
-         (unsigned long)snapshot->i2cReadCount);
+         (unsigned long)snapshot->i2cReadCount,
+         (unsigned long)snapshot->busRecoveryCount,
+         (unsigned long)snapshot->addressNackCount,
+         (unsigned long)snapshot->dataNackCount,
+         (unsigned long)snapshot->sclTimeoutCount);
 }
 
 /* USER CODE END 4 */

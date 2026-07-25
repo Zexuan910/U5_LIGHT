@@ -1,7 +1,7 @@
 #ifndef GH3018_COMM_H
 #define GH3018_COMM_H
 
-#include "stm32u5xx_hal.h"
+#include "gh3018_soft_i2c.h"
 #include <stdint.h>
 
 #define GH3018_COMM_CHIP_ID_MAX_LEN 16U
@@ -23,9 +23,9 @@ typedef enum {
 
 typedef struct {
     Gh3018CommStatus status;
-    HAL_StatusTypeDef deviceReadyStatus;
-    HAL_StatusTypeDef lastHalStatus;
-    uint32_t lastHalError;
+    Gh3018SoftI2cStatus softI2cInitStatus;
+    Gh3018SoftI2cStatus deviceReadyStatus;
+    Gh3018SoftI2cStatus lastSoftI2cStatus;
     int8_t hbdSetI2cRet;
     int8_t hbdConfirmRet;
     int8_t hbdChipIdRet;
@@ -37,6 +37,10 @@ typedef struct {
     uint8_t intLevel;
     uint32_t i2cWriteCount;
     uint32_t i2cReadCount;
+    uint32_t busRecoveryCount;
+    uint32_t addressNackCount;
+    uint32_t dataNackCount;
+    uint32_t sclTimeoutCount;
 } Gh3018CommSnapshot;
 
 extern Gh3018CommSnapshot g_gh3018_comm_snapshot;
