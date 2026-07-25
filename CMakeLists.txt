@@ -65,6 +65,7 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     User/UI/ui_asset_package.c
     User/UI/ui_asset_programmer.c
     User/UI/ui_assets.c
+    User/UI/ui_chinese_font.c
 )
 
 # NanoEdge AI Studio 5.2 deployment library (Cortex-M33, hard-float, short enums).

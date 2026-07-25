@@ -37,6 +37,7 @@
 #include "touch_controller.h"
 #include "ui_asset_programmer.h"
 #include "ui_assets.h"
+#include "ui_chinese_font.h"
 #include "walk_metrics.h"
 
 /* USER CODE END Includes */
@@ -158,7 +159,7 @@ static void MX_I2C4_Init(void);
 static void MX_SPI1_Init(void);
 #endif
 /* USER CODE BEGIN PFP */
-static void LCD_ShowHelloYqzh(void);
+static void LCD_ShowBootBrand(void);
 static void UI_ShowPage(UIPage page);
 static void UI_ShowHome(void);
 static void UI_GotoPage(UIPage page);
@@ -204,6 +205,167 @@ static UWORD LCD_TextWidth(const char* text, UWORD scale)
   }
 
   return (len == 0U) ? 0U : (UWORD)(((len * 6U) - 1U) * scale);
+}
+
+#define UI_BRAND_GLYPH_WIDTH 24U
+#define UI_BRAND_GLYPH_HEIGHT 24U
+#define UI_BRAND_GLYPH_ROW_BYTES 3U
+#define UI_BRAND_GLYPH_COUNT 4U
+#define UI_BRAND_GLYPH_GAP 2U
+
+/* 24x24 monochrome glyphs for U+6E90 U+8D77 U+667A U+6838. */
+static const UBYTE ui_brand_glyphs[UI_BRAND_GLYPH_COUNT][UI_BRAND_GLYPH_HEIGHT * UI_BRAND_GLYPH_ROW_BYTES] = {
+  { /* U+6E90 */
+    0x10U, 0xFFU, 0xFEU,
+    0x18U, 0xFFU, 0xFEU,
+    0x0CU, 0xC2U, 0x00U,
+    0x04U, 0xC3U, 0x00U,
+    0x00U, 0xC3U, 0x00U,
+    0x00U, 0xDFU, 0xF8U,
+    0x70U, 0xC8U, 0x18U,
+    0x3CU, 0xC8U, 0x18U,
+    0x0CU, 0xCFU, 0xF8U,
+    0x00U, 0xCFU, 0xF8U,
+    0x00U, 0xC8U, 0x18U,
+    0x08U, 0xCFU, 0xF8U,
+    0x0CU, 0x9FU, 0xF8U,
+    0x19U, 0x81U, 0x80U,
+    0x19U, 0x81U, 0x80U,
+    0x19U, 0x99U, 0x98U,
+    0x31U, 0x99U, 0x98U,
+    0x33U, 0x31U, 0x8CU,
+    0x33U, 0x71U, 0x86U,
+    0x66U, 0x61U, 0x84U,
+    0x02U, 0x03U, 0x80U,
+    0x00U, 0x02U, 0x00U,
+    0x00U, 0x00U, 0x00U,
+    0x00U, 0x00U, 0x00U
+  },
+  { /* U+8D77 */
+    0x03U, 0x00U, 0x00U,
+    0x03U, 0x08U, 0x00U,
+    0x03U, 0x0FU, 0xF8U,
+    0x1FU, 0xE0U, 0x18U,
+    0x03U, 0x00U, 0x18U,
+    0x03U, 0x00U, 0x18U,
+    0x03U, 0x00U, 0x18U,
+    0x03U, 0x00U, 0x18U,
+    0x3FU, 0xF7U, 0xF8U,
+    0x01U, 0x06U, 0x00U,
+    0x01U, 0x06U, 0x00U,
+    0x01U, 0x06U, 0x00U,
+    0x19U, 0xF6U, 0x00U,
+    0x19U, 0xF6U, 0x0CU,
+    0x19U, 0x06U, 0x0CU,
+    0x19U, 0x06U, 0x0CU,
+    0x3DU, 0x07U, 0xFCU,
+    0x37U, 0x00U, 0x00U,
+    0x23U, 0x80U, 0x00U,
+    0x61U, 0xFFU, 0xFEU,
+    0x20U, 0x3FU, 0xFEU,
+    0x00U, 0x00U, 0x00U,
+    0x00U, 0x00U, 0x00U,
+    0x00U, 0x00U, 0x00U
+  },
+  { /* U+667A */
+    0x06U, 0x00U, 0x00U,
+    0x0CU, 0x00U, 0x00U,
+    0x0FU, 0xFBU, 0xFCU,
+    0x19U, 0x83U, 0x0CU,
+    0x31U, 0x83U, 0x0CU,
+    0x3FU, 0xFBU, 0x0CU,
+    0x3FU, 0xFBU, 0x0CU,
+    0x01U, 0x83U, 0x0CU,
+    0x03U, 0xE3U, 0xFCU,
+    0x06U, 0x7BU, 0xFCU,
+    0x0CU, 0x18U, 0x00U,
+    0x38U, 0x00U, 0x00U,
+    0x17U, 0xFFU, 0xE0U,
+    0x06U, 0x00U, 0x60U,
+    0x02U, 0x00U, 0x60U,
+    0x03U, 0xFFU, 0xE0U,
+    0x03U, 0xFFU, 0xE0U,
+    0x02U, 0x00U, 0x60U,
+    0x02U, 0x00U, 0x60U,
+    0x03U, 0xFFU, 0xE0U,
+    0x06U, 0x00U, 0x60U,
+    0x00U, 0x00U, 0x00U,
+    0x00U, 0x00U, 0x00U,
+    0x00U, 0x00U, 0x00U
+  },
+  { /* U+6838 */
+    0x06U, 0x01U, 0x80U,
+    0x06U, 0x01U, 0xC0U,
+    0x06U, 0x01U, 0x00U,
+    0x06U, 0x3FU, 0xFEU,
+    0x06U, 0x20U, 0x06U,
+    0x3FU, 0x83U, 0x00U,
+    0x06U, 0x06U, 0x20U,
+    0x0EU, 0x0CU, 0x30U,
+    0x0EU, 0x18U, 0x60U,
+    0x0FU, 0x3FU, 0xE0U,
+    0x1FU, 0x9CU, 0xC8U,
+    0x37U, 0x81U, 0x8CU,
+    0x36U, 0x83U, 0x18U,
+    0x66U, 0x06U, 0x30U,
+    0x66U, 0x1CU, 0x70U,
+    0x06U, 0x78U, 0xE0U,
+    0x06U, 0x21U, 0xF0U,
+    0x06U, 0x03U, 0x98U,
+    0x06U, 0x0FU, 0x0CU,
+    0x06U, 0x3CU, 0x0EU,
+    0x06U, 0x30U, 0x00U,
+    0x00U, 0x00U, 0x00U,
+    0x00U, 0x00U, 0x00U,
+    0x00U, 0x00U, 0x00U
+  }
+};
+
+static UWORD LCD_BrandNameWidth(UWORD scale)
+{
+  return (UWORD)(((UI_BRAND_GLYPH_COUNT * UI_BRAND_GLYPH_WIDTH) +
+                  ((UI_BRAND_GLYPH_COUNT - 1U) * UI_BRAND_GLYPH_GAP)) * scale);
+}
+
+static void LCD_DrawBrandName(UWORD x, UWORD y, UWORD color, UWORD scale)
+{
+  UWORD glyph_index;
+
+  for (glyph_index = 0U; glyph_index < UI_BRAND_GLYPH_COUNT; glyph_index++)
+  {
+    UWORD row;
+    UWORD glyph_x = (UWORD)(x + (glyph_index * (UI_BRAND_GLYPH_WIDTH + UI_BRAND_GLYPH_GAP) * scale));
+
+    for (row = 0U; row < UI_BRAND_GLYPH_HEIGHT; row++)
+    {
+      UWORD col;
+
+      for (col = 0U; col < UI_BRAND_GLYPH_WIDTH; col++)
+      {
+        UBYTE row_byte = ui_brand_glyphs[glyph_index][(row * UI_BRAND_GLYPH_ROW_BYTES) + (col / 8U)];
+
+        if ((row_byte & (UBYTE)(0x80U >> (col % 8U))) != 0U)
+        {
+          UWORD x0 = (UWORD)(glyph_x + (col * scale));
+          UWORD y0 = (UWORD)(y + (row * scale));
+
+          LCD_1IN69_FillRect_FastStatic(x0,
+                                        y0,
+                                        (UWORD)(x0 + scale - 1U),
+                                        (UWORD)(y0 + scale - 1U),
+                                        color);
+        }
+      }
+    }
+  }
+}
+
+static void LCD_DrawBrandNameCentered(UWORD y, UWORD color, UWORD scale)
+{
+  UWORD brand_width = LCD_BrandNameWidth(scale);
+  UWORD x = (brand_width >= LCD_1IN69.WIDTH) ? 0U : (UWORD)((LCD_1IN69.WIDTH - brand_width) / 2U);
+
+  LCD_DrawBrandName(x, y, color, scale);
 }
 
 static const UBYTE* LCD_GlyphFor(char ch)
@@ -413,32 +575,14 @@ static void LCD_DrawCenteredTextInRectTransparent(UWORD x, UWORD y, UWORD w, con
   LCD_DrawTextTransparent(tx, y, text, color, scale);
 }
 
-static void LCD_DrawCenteredText(const char* text, UWORD y, UWORD color, UWORD bg_color, UWORD scale)
-{
-  UWORD text_width;
-  UWORD x;
-
-  text_width = LCD_TextWidth(text, scale);
-  x = (text_width >= LCD_1IN69.WIDTH) ? 0U : (UWORD)((LCD_1IN69.WIDTH - text_width) / 2U);
-  LCD_DrawText(x, y, text, color, bg_color, scale);
-}
-
-static void LCD_DrawCenteredTextInRect(UWORD x, UWORD y, UWORD w, const char* text, UWORD color, UWORD bg_color, UWORD scale)
-{
-  UWORD text_width = LCD_TextWidth(text, scale);
-  UWORD tx = (text_width >= w) ? x : (UWORD)(x + ((w - text_width) / 2U));
-
-  LCD_DrawText(tx, y, text, color, bg_color, scale);
-}
-
-static void LCD_ShowHelloYqzh(void)
+static void LCD_ShowBootBrand(void)
 {
   UWORD bg_color = LCD_COLOR_WHITE;
 
   LCD_1IN69_FillRect_FastStatic(0U, 0U, (UWORD)(LCD_1IN69.WIDTH - 1U), (UWORD)(LCD_1IN69.HEIGHT - 1U), bg_color);
   LCD_1IN69_FillRect_FastStatic(0U, 0U, (UWORD)(LCD_1IN69.WIDTH - 1U), 7U, LCD_COLOR_BLACK);
   LCD_1IN69_FillRect_FastStatic(0U, 272U, (UWORD)(LCD_1IN69.WIDTH - 1U), (UWORD)(LCD_1IN69.HEIGHT - 1U), LCD_COLOR_BLACK);
-  LCD_DrawCenteredText("Hello YQZH", 126U, LCD_COLOR_BLACK, bg_color, 4U);
+  LCD_DrawBrandNameCentered(116U, LCD_COLOR_BLACK, 2U);
 }
 
 static void LCD_FillRectByRows(UWORD x0, UWORD y0, UWORD x1, UWORD y1, UWORD color)
@@ -583,13 +727,13 @@ static void UI_ClockUpdate(uint32_t now_ms)
 static const char* UI_ClockWeekdayText(void)
 {
   static const char* const names[7] = {
-    "SUNDAY",
-    "MONDAY",
-    "TUESDAY",
-    "WEDNESDAY",
-    "THURSDAY",
-    "FRIDAY",
-    "SATURDAY"
+    "星期日",
+    "星期一",
+    "星期二",
+    "星期三",
+    "星期四",
+    "星期五",
+    "星期六"
   };
 
   return names[ui_clock.wday % 7U];
@@ -611,7 +755,7 @@ static void UI_DrawHomeClockFields(void)
 
   LCD_DrawTextTransparent(28U, 72U, time_text, LCD_COLOR_WHITE, 4U);
   LCD_DrawTextTransparent(34U, 178U, date_text, pale_text, 2U);
-  LCD_DrawCenteredTextInRectTransparent(0U, 222U, 240U, UI_ClockWeekdayText(), pale_text, 2U);
+  UIChinese_DrawCenteredInRect(0U, 222U, 240U, UI_ClockWeekdayText(), pale_text, 1U);
   ui_home_clock_key = UI_ClockMinuteKey();
 }
 
@@ -831,7 +975,7 @@ static void UI_DrawSportMainField(const char* value_text, const char* label_text
 
   LCD_FillBox(0U, 42U, 240U, 58U, main_bg);
   LCD_DrawCenteredTextInRectTransparent(0U, 48U, 240U, value_text, LCD_COLOR_BLACK, 3U);
-  LCD_DrawCenteredTextInRectTransparent(0U, 84U, 240U, label_text, muted, 1U);
+  UIChinese_DrawCenteredInRect(0U, 81U, 240U, label_text, muted, 1U);
 }
 
 static void UI_DrawWalkDistanceField(uint32_t centi_km)
@@ -839,7 +983,7 @@ static void UI_DrawWalkDistanceField(uint32_t centi_km)
   char text[8];
 
   UI_FormatWalkDistance(centi_km, text, sizeof(text));
-  UI_DrawSportMainField(text, "KM");
+  UI_DrawSportMainField(text, "公里");
   ui_walk_distance_key = centi_km;
 }
 
@@ -940,7 +1084,7 @@ static void UI_UpdateMotionStatusField(UBYTE force)
     if (IMU_Sensor_IsReady() == false)
     {
       status_key = 0x82U;
-      text = "ERR";
+      text = "错误";
     }
     else
     {
@@ -949,23 +1093,23 @@ static void UI_UpdateMotionStatusField(UBYTE force)
       if ((exercise_running[1] == 0U) &&
           (ai_state != NEAI_RUN_UI_ERROR))
       {
-        text = "READY";
+        text = "就绪";
       }
       else if (ai_state == NEAI_RUN_UI_RUN)
       {
-        text = "RUN";
+        text = "跑步";
       }
       else if (ai_state == NEAI_RUN_UI_STILL)
       {
-        text = "STILL";
+        text = "静止";
       }
       else if (ai_state == NEAI_RUN_UI_ERROR)
       {
-        text = "ERR";
+        text = "错误";
       }
       else
       {
-        text = "WAIT";
+        text = "等待";
       }
     }
   }
@@ -975,23 +1119,23 @@ static void UI_UpdateMotionStatusField(UBYTE force)
     status_key = ai_state;
     if (ai_state == NEAI_WALK_UI_WALK)
     {
-      text = "WALK";
+      text = "健走";
     }
     else if (ai_state == NEAI_WALK_UI_FAST_WALK)
     {
-      text = "FAST";
+      text = "快走";
     }
     else if (ai_state == NEAI_WALK_UI_STILL)
     {
-      text = "STILL";
+      text = "静止";
     }
     else if (ai_state == NEAI_WALK_UI_ERROR)
     {
-      text = "ERR";
+      text = "错误";
     }
     else
     {
-      text = "WAIT";
+      text = "等待";
     }
   }
 
@@ -1001,7 +1145,7 @@ static void UI_UpdateMotionStatusField(UBYTE force)
   }
 
   LCD_FillBox(130U, 116U, 90U, 20U, box1);
-  LCD_DrawCenteredTextInRectTransparent(124U, 119U, 104U, text, stat_text, 2U);
+  UIChinese_DrawCenteredInRect(124U, 118U, 104U, text, stat_text, 1U);
   ui_walk_ai_key = status_key;
 }
 
@@ -1026,7 +1170,7 @@ static void UI_UpdateRopeDataDisplay(UBYTE force)
       (rope_metrics_output.jump_count != ui_rope_count_key))
   {
     UI_FormatWalkStep(rope_metrics_output.jump_count, text, sizeof(text));
-    UI_DrawSportMainField(text, "COUNT");
+    UI_DrawSportMainField(text, "次数");
     ui_rope_count_key = rope_metrics_output.jump_count;
   }
   if ((force != 0U) || (now_rate != ui_rope_now_rate_key))
@@ -1072,17 +1216,17 @@ static void UI_UpdateRopeStatusField(UBYTE force)
   if (IMU_Sensor_IsReady() == false)
   {
     status_key = 2U;
-    text = "ERR";
+    text = "错误";
   }
   else if (exercise_running[2] != 0U)
   {
     status_key = 1U;
-    text = "ROPE";
+    text = "跳绳";
   }
   else
   {
     status_key = 0U;
-    text = "READY";
+    text = "就绪";
   }
 
   if ((force == 0U) && (ui_rope_status_key == status_key))
@@ -1090,8 +1234,7 @@ static void UI_UpdateRopeStatusField(UBYTE force)
     return;
   }
   LCD_FillBox(130U, 116U, 90U, 20U, box1);
-  LCD_DrawCenteredTextInRectTransparent(124U, 119U, 104U, text,
-                                       stat_text, 2U);
+  UIChinese_DrawCenteredInRect(124U, 118U, 104U, text, stat_text, 1U);
   ui_rope_status_key = status_key;
 }
 
@@ -1348,11 +1491,11 @@ static void UI_ShowExitConfirm(UIPage target)
   ui_exit_confirm_visible = 1U;
   LCD_FillBox(20U, 68U, 200U, 140U, LCD_COLOR_BLACK);
   LCD_FillBox(24U, 72U, 192U, 132U, panel);
-  LCD_DrawCenteredTextInRectTransparent(24U, 96U, 192U, "END SPORT", text, 2U);
+  UIChinese_DrawCenteredInRect(24U, 96U, 192U, "结束运动", text, 1U);
   LCD_FillBox(42U, 152U, 72U, 38U, yes);
   LCD_FillBox(126U, 152U, 72U, 38U, no);
-  LCD_DrawCenteredTextInRectTransparent(42U, 160U, 72U, "YES", button_text, 2U);
-  LCD_DrawCenteredTextInRectTransparent(126U, 160U, 72U, "NO", button_text, 2U);
+  UIChinese_DrawCenteredInRect(42U, 162U, 72U, "是", button_text, 1U);
+  UIChinese_DrawCenteredInRect(126U, 162U, 72U, "否", button_text, 1U);
 }
 
 static void UI_HideExitConfirm(void)
@@ -1378,13 +1521,12 @@ static void UI_DrawSportActionButton(UWORD accent)
   UWORD bg = LCD_RGB565(5U, 13U, 26U);
 
   LCD_FillBox(52U, 248U, 136U, 28U, accent);
-  LCD_DrawCenteredTextInRect(52U,
-                             254U,
-                             136U,
-                             (exercise_running[UI_CurrentSportIndex()] != 0U) ? "STOP" : "START",
-                             bg,
-                             accent,
-                             2U);
+  UIChinese_DrawCenteredInRect(52U,
+                               254U,
+                               136U,
+                               (exercise_running[UI_CurrentSportIndex()] != 0U) ? "停止" : "开始",
+                               bg,
+                               1U);
 }
 
 static void UI_ShowHome(void)
@@ -1414,7 +1556,7 @@ static void UI_ShowHome(void)
     LCD_FillBox(168U, 126U, 24U, 22U, cloud);
   }
 
-  LCD_DrawTextTransparent(18U, 18U, "YQZH TEAM", LCD_COLOR_WHITE, 2U);
+  LCD_DrawBrandName(18U, 14U, LCD_COLOR_WHITE, 1U);
   UI_UpdateHomeClock(1U);
 }
 
@@ -1437,20 +1579,20 @@ static void UI_ShowSportMenu(UBYTE selected)
     LCD_FillScreenByRows(bg);
   }
   LCD_FillBox(0U, 0U, 240U, 5U, accent);
-  LCD_DrawTextTransparent(18U, 18U, "SPORT", title, 2U);
-  LCD_DrawTextTransparent(18U, 44U, "TAP MODE", hint, 1U);
+  UIChinese_DrawText(18U, 14U, "运动模式", title, 1U);
+  UIChinese_DrawText(18U, 42U, "点击选择", hint, 1U);
 
   LCD_FillBox(18U, 70U, 204U, 44U, card0);
-  LCD_DrawText(30U, 78U, "WALK", card_title, card0, 2U);
-  LCD_DrawText(142U, 88U, "START", card_text, card0, 1U);
+  UIChinese_DrawText(30U, 82U, "健走", card_title, 1U);
+  UIChinese_DrawCenteredInRect(124U, 84U, 98U, "开始", card_text, 1U);
 
   LCD_FillBox(18U, 128U, 204U, 44U, card1);
-  LCD_DrawText(30U, 136U, "RUN", card_title, card1, 2U);
-  LCD_DrawText(142U, 146U, "START", card_text, card1, 1U);
+  UIChinese_DrawText(30U, 140U, "跑步", card_title, 1U);
+  UIChinese_DrawCenteredInRect(124U, 142U, 98U, "开始", card_text, 1U);
 
   LCD_FillBox(18U, 186U, 204U, 44U, card2);
-  LCD_DrawText(30U, 194U, "ROPE", card_title, card2, 2U);
-  LCD_DrawText(142U, 204U, "START", card_text, card2, 1U);
+  UIChinese_DrawText(30U, 198U, "跳绳", card_title, 1U);
+  UIChinese_DrawCenteredInRect(124U, 200U, 98U, "开始", card_text, 1U);
 
 }
 
@@ -1476,28 +1618,28 @@ static void UI_DrawSportDetail(const char* title_text, UWORD accent, const char*
     LCD_FillScreenByRows(bg);
   }
   LCD_FillBox(0U, 0U, 240U, 5U, accent);
-  LCD_DrawTextTransparent(12U, 14U, title_text, title, 2U);
+  UIChinese_DrawText(12U, 14U, title_text, title, 1U);
   UI_DrawSportMainField(main_value, main_label);
 
   LCD_FillBox(12U, 110U, 104U, 58U, box0);
   UI_DrawSportTimeField(UI_ExerciseElapsedSeconds(now_ms));
-  LCD_DrawText(20U, 149U, l0, stat_label, box0, 1U);
+  UIChinese_DrawText(20U, 148U, l0, stat_label, 1U);
 
   LCD_FillBox(124U, 110U, 104U, 58U, box1);
   LCD_DrawText(132U, 119U, v1, stat_text, box1, 2U);
-  LCD_DrawText(132U, 149U, l1, stat_label, box1, 1U);
+  UIChinese_DrawText(132U, 148U, l1, stat_label, 1U);
 
   LCD_FillBox(12U, 186U, 62U, 58U, box2);
   LCD_DrawText(20U, 195U, v2, stat_text, box2, 1U);
-  LCD_DrawText(20U, 225U, l2, stat_label, box2, 1U);
+  UIChinese_DrawText(20U, 222U, l2, stat_label, 1U);
 
   LCD_FillBox(85U, 186U, 70U, 58U, box3);
   LCD_DrawText(93U, 195U, v3, stat_text, box3, 1U);
-  LCD_DrawText(93U, 225U, l3, stat_label, box3, 1U);
+  UIChinese_DrawText(93U, 222U, l3, stat_label, 1U);
 
   LCD_FillBox(158U, 186U, 70U, 58U, box4);
   LCD_DrawText(166U, 195U, v4, stat_text, box4, 1U);
-  LCD_DrawText(166U, 225U, l4, stat_label, box4, 1U);
+  UIChinese_DrawText(166U, 222U, l4, stat_label, 1U);
 
   UI_DrawSportActionButton(accent);
 }
@@ -1518,23 +1660,23 @@ static void UI_ShowPage(UIPage page)
     UI_ShowSportMenu(selected_sport);
     break;
   case UI_PAGE_WALK:
-    UI_DrawSportDetail("WALK", LCD_RGB565(63U, 212U, 122U), "0.00", "KM",
-                       "00:00", "WAIT", "0.0", "0.0", "0",
-                       "TIME", "AI", "NOW", "AVG", "STEP");
+    UI_DrawSportDetail("健走", LCD_RGB565(63U, 212U, 122U), "0.00", "公里",
+                       "00:00", "", "0.0", "0.0", "0",
+                       "时间", "状态", "当前", "平均", "步数");
     UI_UpdateMotionDataDisplay(1U);
     UI_UpdateMotionStatusField(1U);
     break;
   case UI_PAGE_RUN:
-    UI_DrawSportDetail("RUN", LCD_RGB565(255U, 106U, 61U), "0.00", "KM",
-                       "00:00", "READY", "0.0", "0.0", "0",
-                       "TIME", "AI", "NOW", "AVG", "STEP");
+    UI_DrawSportDetail("跑步", LCD_RGB565(255U, 106U, 61U), "0.00", "公里",
+                       "00:00", "", "0.0", "0.0", "0",
+                       "时间", "状态", "当前", "平均", "步数");
     UI_UpdateMotionDataDisplay(1U);
     UI_UpdateMotionStatusField(1U);
     break;
   case UI_PAGE_ROPE:
-    UI_DrawSportDetail("ROPE", LCD_RGB565(108U, 140U, 255U), "0", "COUNT",
-                       "00:00", "READY", "0", "0", "0.0",
-                       "TIME", "IMU", "NOW", "AVG", "PEAK");
+    UI_DrawSportDetail("跳绳", LCD_RGB565(108U, 140U, 255U), "0", "次数",
+                       "00:00", "", "0", "0", "0.0",
+                       "时间", "状态", "当前", "平均", "峰值");
     UI_UpdateRopeDataDisplay(1U);
     UI_UpdateRopeStatusField(1U);
     break;
@@ -2026,19 +2168,19 @@ int main(void)
   {
     uint32_t written_bytes = 0UL;
     LCD_1IN69_FillRect_FastStatic(0U, 0U, (UWORD)(LCD_1IN69.WIDTH - 1U), (UWORD)(LCD_1IN69.HEIGHT - 1U), LCD_COLOR_WHITE);
-    LCD_DrawCenteredText("WRITE FLASH", 96U, LCD_COLOR_BLACK, LCD_COLOR_WHITE, 3U);
-    LCD_DrawCenteredText("WAIT", 142U, LCD_COLOR_BLACK, LCD_COLOR_WHITE, 2U);
+    UIChinese_DrawCenteredInRect(0U, 96U, 240U, "写入资源", LCD_COLOR_BLACK, 2U);
+    UIChinese_DrawCenteredInRect(0U, 142U, 240U, "请稍候", LCD_COLOR_BLACK, 1U);
     if (UIAssetProgrammer_Run(&written_bytes) != 0U)
     {
       LCD_1IN69_FillRect_FastStatic(0U, 0U, (UWORD)(LCD_1IN69.WIDTH - 1U), (UWORD)(LCD_1IN69.HEIGHT - 1U), LCD_COLOR_WHITE);
-      LCD_DrawCenteredText("FLASH OK", 104U, LCD_COLOR_BLACK, LCD_COLOR_WHITE, 3U);
-      LCD_DrawCenteredText("POWER HOLD", 150U, LCD_COLOR_BLACK, LCD_COLOR_WHITE, 2U);
+      UIChinese_DrawCenteredInRect(0U, 104U, 240U, "写入成功", LCD_COLOR_BLACK, 2U);
+      UIChinese_DrawCenteredInRect(0U, 150U, 240U, "长按电源", LCD_COLOR_BLACK, 1U);
     }
     else
     {
       LCD_1IN69_FillRect_FastStatic(0U, 0U, (UWORD)(LCD_1IN69.WIDTH - 1U), (UWORD)(LCD_1IN69.HEIGHT - 1U), LCD_COLOR_WHITE);
-      LCD_DrawCenteredText("FLASH FAIL", 104U, LCD_COLOR_BLACK, LCD_COLOR_WHITE, 3U);
-      LCD_DrawCenteredText("CHECK ID", 150U, LCD_COLOR_BLACK, LCD_COLOR_WHITE, 2U);
+      UIChinese_DrawCenteredInRect(0U, 104U, 240U, "写入失败", LCD_COLOR_BLACK, 2U);
+      UIChinese_DrawCenteredInRect(0U, 150U, 240U, "检查连接", LCD_COLOR_BLACK, 1U);
     }
     (void)written_bytes;
     while (1)
@@ -2048,7 +2190,7 @@ int main(void)
   }
 #endif
   (void)UIAssets_Init();
-  LCD_ShowHelloYqzh();
+  LCD_ShowBootBrand();
   {
     uint32_t hello_start_ms = HAL_GetTick();
     (void)UIAssets_Preload();
