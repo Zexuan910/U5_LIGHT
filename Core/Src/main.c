@@ -986,9 +986,15 @@ static uint8_t UI_SelectDisplayBpm(
 static void UI_StartExercise(uint32_t now_ms)
 {
   UBYTE sport = UI_CurrentSportIndex();
+  const Gh3018GoodixHrSpo2Snapshot *snapshot;
 
   (void)Gh3018GoodixHrSpo2_ResetPpgBpm();
-  (void)Gh3018GoodixHrSpo2_SetManualWear(1U);
+  snapshot = Gh3018GoodixHrSpo2_Start();
+  gh3018_last_poll_tick = now_ms;
+  if ((snapshot != NULL) && (snapshot->measurementActive != 0U))
+  {
+    (void)Gh3018GoodixHrSpo2_SetManualWear(1U);
+  }
   exercise_elapsed_seconds[sport] = 0U;
   exercise_start_ms[sport] = now_ms;
   exercise_running[sport] = 1U;
@@ -1029,6 +1035,8 @@ static void UI_StopExercise(uint32_t now_ms)
   ui_sport_health_last_draw_tick = 0U;
   (void)Gh3018GoodixHrSpo2_SetManualWear(0U);
   (void)Gh3018GoodixHrSpo2_ResetPpgBpm();
+  (void)Gh3018GoodixHrSpo2_Stop();
+  gh3018_last_poll_tick = now_ms;
 
   UI_DrawSportActionButton(UI_CurrentSportAccent());
   UI_UpdateSportTimer(now_ms, 1U);
@@ -1770,16 +1778,9 @@ static const Gh3018GoodixHrSpo2Snapshot *Gh3018GoodixHrSpo2Service_Update(
     snapshot = Gh3018GoodixHrSpo2_GetSnapshot();
   }
 
-  if ((snapshot->measurementActive == 0U) &&
-      ((snapshot->status == GH3018_GOODIX_HRSPO2_STATUS_READY) ||
-       (snapshot->status == GH3018_GOODIX_HRSPO2_STATUS_STOPPED)))
-  {
-    gh3018_last_poll_tick = now_ms;
-    snapshot = Gh3018GoodixHrSpo2_Start();
-  }
-  else if ((snapshot->measurementActive != 0U) &&
-           ((now_ms - gh3018_last_poll_tick) >=
-            GH3018_HRSPO2_POLL_INTERVAL_MS))
+  if ((snapshot->measurementActive != 0U) &&
+      ((now_ms - gh3018_last_poll_tick) >=
+       GH3018_HRSPO2_POLL_INTERVAL_MS))
   {
     gh3018_last_poll_tick = now_ms;
     snapshot = Gh3018GoodixHrSpo2_Poll();
@@ -2024,15 +2025,19 @@ int main(void)
     UI_ShowPage(ui_page);
   }
 
-  printf("\r\nU575 wzx UI with GH3018 green PPG BPM validation start\r\n");
+  printf("\r\nU575 wzx UI with START-gated GH3018 green PPG ready\r\n");
   const Gh3018GoodixHrSpo2Snapshot *hrspo2 = Gh3018GoodixHrSpo2_Init();
   PrintHrSpo2Snapshot("init", hrspo2);
-  hrspo2 = Gh3018GoodixHrSpo2_Start();
   if (GH3018_DIAGNOSTIC_SCREEN_ENABLE != 0U)
   {
+    hrspo2 = Gh3018GoodixHrSpo2_Start();
     UI_ShowHrSpo2Display(hrspo2);
+    PrintHrSpo2Snapshot("diagnostic-start", hrspo2);
   }
-  PrintHrSpo2Snapshot("start", hrspo2);
+  else
+  {
+    PrintHrSpo2Snapshot("ready", hrspo2);
+  }
   uint32_t lastLogTick = HAL_GetTick();
   const BatteryMonitorSnapshot *battery = BatteryMonitor_GetSnapshot();
   Gh3018GoodixHrSpo2Status lastStatus = hrspo2->status;
