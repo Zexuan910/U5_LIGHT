@@ -31,6 +31,7 @@
 #include "eeprom.h"
 #include "imu_sensor.h"
 #include "motion_log.h"
+#include "neai_rope_classifier.h"
 #include "neai_run_classifier.h"
 #include "neai_walk_classifier.h"
 #include "rope_metrics.h"
@@ -213,7 +214,7 @@ static UWORD LCD_TextWidth(const char* text, UWORD scale)
 #define UI_BRAND_GLYPH_COUNT 4U
 #define UI_BRAND_GLYPH_GAP 2U
 
-/* 24x24 monochrome glyphs for U+6E90 U+8D77 U+667A U+6838. */
+/* 24x24 monochrome glyphs for U+6E90 U+542F U+667A U+6838. */
 static const UBYTE ui_brand_glyphs[UI_BRAND_GLYPH_COUNT][UI_BRAND_GLYPH_HEIGHT * UI_BRAND_GLYPH_ROW_BYTES] = {
   { /* U+6E90 */
     0x10U, 0xFFU, 0xFEU,
@@ -241,28 +242,28 @@ static const UBYTE ui_brand_glyphs[UI_BRAND_GLYPH_COUNT][UI_BRAND_GLYPH_HEIGHT *
     0x00U, 0x00U, 0x00U,
     0x00U, 0x00U, 0x00U
   },
-  { /* U+8D77 */
-    0x03U, 0x00U, 0x00U,
-    0x03U, 0x08U, 0x00U,
-    0x03U, 0x0FU, 0xF8U,
-    0x1FU, 0xE0U, 0x18U,
-    0x03U, 0x00U, 0x18U,
-    0x03U, 0x00U, 0x18U,
-    0x03U, 0x00U, 0x18U,
-    0x03U, 0x00U, 0x18U,
-    0x3FU, 0xF7U, 0xF8U,
-    0x01U, 0x06U, 0x00U,
-    0x01U, 0x06U, 0x00U,
-    0x01U, 0x06U, 0x00U,
-    0x19U, 0xF6U, 0x00U,
-    0x19U, 0xF6U, 0x0CU,
-    0x19U, 0x06U, 0x0CU,
-    0x19U, 0x06U, 0x0CU,
-    0x3DU, 0x07U, 0xFCU,
-    0x37U, 0x00U, 0x00U,
-    0x23U, 0x80U, 0x00U,
-    0x61U, 0xFFU, 0xFEU,
-    0x20U, 0x3FU, 0xFEU,
+  { /* U+542F */
+    0x00U, 0x1CU, 0x00U,
+    0x00U, 0x0CU, 0x00U,
+    0x07U, 0xFFU, 0xF0U,
+    0x07U, 0xFFU, 0xF0U,
+    0x04U, 0x00U, 0x30U,
+    0x04U, 0x00U, 0x30U,
+    0x04U, 0x00U, 0x30U,
+    0x04U, 0x00U, 0x30U,
+    0x07U, 0xFFU, 0xF0U,
+    0x04U, 0x00U, 0x00U,
+    0x0CU, 0x00U, 0x00U,
+    0x0CU, 0x00U, 0x00U,
+    0x0DU, 0xFFU, 0xF8U,
+    0x0DU, 0xFFU, 0xF8U,
+    0x0DU, 0x80U, 0x18U,
+    0x19U, 0x80U, 0x18U,
+    0x19U, 0x80U, 0x18U,
+    0x19U, 0x80U, 0x18U,
+    0x31U, 0xFFU, 0xF8U,
+    0x71U, 0x80U, 0x18U,
+    0x21U, 0x80U, 0x18U,
     0x00U, 0x00U, 0x00U,
     0x00U, 0x00U, 0x00U,
     0x00U, 0x00U, 0x00U
@@ -983,7 +984,7 @@ static void UI_DrawWalkDistanceField(uint32_t centi_km)
   char text[8];
 
   UI_FormatWalkDistance(centi_km, text, sizeof(text));
-  UI_DrawSportMainField(text, "公里");
+  UI_DrawSportMainField(text, "km");
   ui_walk_distance_key = centi_km;
 }
 
@@ -1170,7 +1171,7 @@ static void UI_UpdateRopeDataDisplay(UBYTE force)
       (rope_metrics_output.jump_count != ui_rope_count_key))
   {
     UI_FormatWalkStep(rope_metrics_output.jump_count, text, sizeof(text));
-    UI_DrawSportMainField(text, "次数");
+    UI_DrawSportMainField(text, "次");
     ui_rope_count_key = rope_metrics_output.jump_count;
   }
   if ((force != 0U) || (now_rate != ui_rope_now_rate_key))
@@ -1203,6 +1204,7 @@ static void UI_UpdateRopeDataDisplay(UBYTE force)
 
 static void UI_UpdateRopeStatusField(UBYTE force)
 {
+  uint8_t ai_state;
   UBYTE status_key;
   const char* text;
   UWORD box1 = LCD_RGB565(16U, 91U, 118U);
@@ -1213,20 +1215,37 @@ static void UI_UpdateRopeStatusField(UBYTE force)
     return;
   }
 
+  ai_state = NeaiRopeClassifier_GetUiState();
   if (IMU_Sensor_IsReady() == false)
   {
-    status_key = 2U;
+    status_key = 0x84U;
     text = "错误";
   }
-  else if (exercise_running[2] != 0U)
+  else if ((exercise_running[2] == 0U) &&
+           (ai_state != NEAI_ROPE_UI_ERROR))
+  {
+    status_key = 0U;
+    text = "就绪";
+  }
+  else if (ai_state == NEAI_ROPE_UI_ROPE)
   {
     status_key = 1U;
     text = "跳绳";
   }
+  else if (ai_state == NEAI_ROPE_UI_STILL)
+  {
+    status_key = 2U;
+    text = "静止";
+  }
+  else if (ai_state == NEAI_ROPE_UI_ERROR)
+  {
+    status_key = 3U;
+    text = "错误";
+  }
   else
   {
-    status_key = 0U;
-    text = "就绪";
+    status_key = 4U;
+    text = "等待";
   }
 
   if ((force == 0U) && (ui_rope_status_key == status_key))
@@ -1314,8 +1333,19 @@ static void UI_UpdateMotionMetrics(uint32_t now_ms)
 
     if (use_rope != 0U)
     {
-      RopeMetrics_Update(&rope_metrics_state, &rope_sample,
-                         &rope_metrics_output);
+      NeaiRopeClassifier_PushSample(rope_sample.accel_g,
+                                    rope_sample.gyro_rad_s);
+      if (NeaiRopeClassifier_AllowMetrics())
+      {
+        RopeMetrics_Update(&rope_metrics_state, &rope_sample,
+                           &rope_metrics_output);
+      }
+      else
+      {
+        RopeMetrics_SuppressMotion(&rope_metrics_state,
+                                   rope_sample.tick_ms,
+                                   &rope_metrics_output);
+      }
     }
     else if (use_walk_ai != 0U)
     {
@@ -1460,6 +1490,7 @@ static void UI_ToggleExercise(uint32_t now_ms)
     {
       motion_sample_tick_ms = now_ms;
       RopeMetrics_Start(&rope_metrics_state, now_ms);
+      NeaiRopeClassifier_Reset();
       memset(&rope_metrics_output, 0, sizeof(rope_metrics_output));
       WalkMetrics_DebugBeginSession(now_ms);
       (void)IMU_Sensor_ResetFifo();
@@ -1598,7 +1629,8 @@ static void UI_ShowSportMenu(UBYTE selected)
 
 static void UI_DrawSportDetail(const char* title_text, UWORD accent, const char* main_value, const char* main_label,
                                const char* v0, const char* v1, const char* v2, const char* v3, const char* v4,
-                               const char* l0, const char* l1, const char* l2, const char* l3, const char* l4)
+                               const char* l0, const char* l1, const char* l2, const char* l3, const char* l4,
+                               const char* u0, const char* u2, const char* u3, const char* u4)
 {
   UWORD bg = LCD_RGB565(5U, 13U, 26U);
   UWORD title = LCD_COLOR_BLACK;
@@ -1623,7 +1655,8 @@ static void UI_DrawSportDetail(const char* title_text, UWORD accent, const char*
 
   LCD_FillBox(12U, 110U, 104U, 58U, box0);
   UI_DrawSportTimeField(UI_ExerciseElapsedSeconds(now_ms));
-  UIChinese_DrawText(20U, 148U, l0, stat_label, 1U);
+  LCD_DrawCenteredTextInRectTransparent(12U, 137U, 104U, u0, stat_label, 1U);
+  UIChinese_DrawText(20U, 151U, l0, stat_label, 1U);
 
   LCD_FillBox(124U, 110U, 104U, 58U, box1);
   LCD_DrawText(132U, 119U, v1, stat_text, box1, 2U);
@@ -1631,15 +1664,18 @@ static void UI_DrawSportDetail(const char* title_text, UWORD accent, const char*
 
   LCD_FillBox(12U, 186U, 62U, 58U, box2);
   LCD_DrawText(20U, 195U, v2, stat_text, box2, 1U);
-  UIChinese_DrawText(20U, 222U, l2, stat_label, 1U);
+  LCD_DrawCenteredTextInRectTransparent(12U, 207U, 62U, u2, stat_label, 1U);
+  UIChinese_DrawText(20U, 224U, l2, stat_label, 1U);
 
   LCD_FillBox(85U, 186U, 70U, 58U, box3);
   LCD_DrawText(93U, 195U, v3, stat_text, box3, 1U);
-  UIChinese_DrawText(93U, 222U, l3, stat_label, 1U);
+  LCD_DrawCenteredTextInRectTransparent(85U, 207U, 70U, u3, stat_label, 1U);
+  UIChinese_DrawText(93U, 224U, l3, stat_label, 1U);
 
   LCD_FillBox(158U, 186U, 70U, 58U, box4);
   LCD_DrawText(166U, 195U, v4, stat_text, box4, 1U);
-  UIChinese_DrawText(166U, 222U, l4, stat_label, 1U);
+  LCD_DrawCenteredTextInRectTransparent(158U, 207U, 70U, u4, stat_label, 1U);
+  UIChinese_DrawText(166U, 224U, l4, stat_label, 1U);
 
   UI_DrawSportActionButton(accent);
 }
@@ -1660,23 +1696,26 @@ static void UI_ShowPage(UIPage page)
     UI_ShowSportMenu(selected_sport);
     break;
   case UI_PAGE_WALK:
-    UI_DrawSportDetail("健走", LCD_RGB565(63U, 212U, 122U), "0.00", "公里",
+    UI_DrawSportDetail("健走", LCD_RGB565(63U, 212U, 122U), "0.00", "km",
                        "00:00", "", "0.0", "0.0", "0",
-                       "时间", "状态", "当前", "平均", "步数");
+                       "时间", "状态", "当前", "平均", "步数",
+                       "mm:ss", "m/s", "m/s", "step");
     UI_UpdateMotionDataDisplay(1U);
     UI_UpdateMotionStatusField(1U);
     break;
   case UI_PAGE_RUN:
-    UI_DrawSportDetail("跑步", LCD_RGB565(255U, 106U, 61U), "0.00", "公里",
+    UI_DrawSportDetail("跑步", LCD_RGB565(255U, 106U, 61U), "0.00", "km",
                        "00:00", "", "0.0", "0.0", "0",
-                       "时间", "状态", "当前", "平均", "步数");
+                       "时间", "状态", "当前", "平均", "步数",
+                       "mm:ss", "m/s", "m/s", "step");
     UI_UpdateMotionDataDisplay(1U);
     UI_UpdateMotionStatusField(1U);
     break;
   case UI_PAGE_ROPE:
-    UI_DrawSportDetail("跳绳", LCD_RGB565(108U, 140U, 255U), "0", "次数",
+    UI_DrawSportDetail("跳绳", LCD_RGB565(108U, 140U, 255U), "0", "次",
                        "00:00", "", "0", "0", "0.0",
-                       "时间", "状态", "当前", "平均", "峰值");
+                       "时间", "状态", "当前", "平均", "峰值",
+                       "mm:ss", "rpm", "rpm", "rad/s");
     UI_UpdateRopeDataDisplay(1U);
     UI_UpdateRopeStatusField(1U);
     break;
@@ -2154,6 +2193,7 @@ int main(void)
   IMU_Sensor_Init();
   (void)NeaiWalkClassifier_Init();
   (void)NeaiRunClassifier_Init();
+  (void)NeaiRopeClassifier_Init();
   WalkMetrics_Reset(&walk_metrics_state);
   memset(&walk_metrics_output, 0, sizeof(walk_metrics_output));
   WalkMetrics_Reset(&run_metrics_state);

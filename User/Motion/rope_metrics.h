@@ -36,9 +36,9 @@ typedef struct
   uint32_t jump_count;
   float gravity_g;
   float filtered_dynamic_g;
-  float filtered_gyro_z_rad_s;
+  float filtered_rotation_rad_s;
   float noise_dynamic_g;
-  float noise_gyro_z_rad_s;
+  float noise_rotation_rad_s;
   float event_peak_dynamic_g;
   float event_peak_rotation_rad_s;
   float smoothed_rate_x10;
@@ -47,6 +47,8 @@ typedef struct
 void RopeMetrics_Reset(RopeMetricsState* state);
 void RopeMetrics_Start(RopeMetricsState* state, uint32_t tick_ms);
 void RopeMetrics_Stop(RopeMetricsState* state);
+void RopeMetrics_SuppressMotion(RopeMetricsState* state, uint32_t tick_ms,
+                                RopeMetricsOutput* output);
 void RopeMetrics_Update(RopeMetricsState* state,
                         const RopeMetricsImuSample* sample,
                         RopeMetricsOutput* output);

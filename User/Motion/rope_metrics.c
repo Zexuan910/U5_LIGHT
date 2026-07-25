@@ -8,9 +8,12 @@
 #define ROPE_MAX_INTERVAL_MS         1500UL
 #define ROPE_RATE_TIMEOUT_MS         1500UL
 #define ROPE_EVENT_MAX_MS             500UL
-#define ROPE_HIGH_GYRO_Z_RAD_S         3.50f
-#define ROPE_LOW_GYRO_Z_RAD_S          1.40f
-#define ROPE_MIN_DYNAMIC_G             0.25f
+#define ROPE_BASE_HIGH_ROTATION_RAD_S   3.50f
+#define ROPE_LOW_ROTATION_RAD_S         1.40f
+#define ROPE_MIN_DYNAMIC_G              0.18f
+#define ROPE_NOISE_ROTATION_GAIN        2.20f
+#define ROPE_NOISE_ROTATION_MARGIN      0.60f
+#define ROPE_NOISE_DYNAMIC_GAIN         2.00f
 
 static float RopeMetrics_Abs(float value)
 {
@@ -107,7 +110,7 @@ void RopeMetrics_Reset(RopeMetricsState* state)
   memset(state, 0, sizeof(*state));
   state->gravity_g = 1.0f;
   state->noise_dynamic_g = 0.02f;
-  state->noise_gyro_z_rad_s = 0.04f;
+  state->noise_rotation_rad_s = 0.04f;
 }
 
 void RopeMetrics_Start(RopeMetricsState* state, uint32_t tick_ms)
@@ -134,13 +137,30 @@ void RopeMetrics_Stop(RopeMetricsState* state)
   state->event_active = 0U;
 }
 
+void RopeMetrics_SuppressMotion(RopeMetricsState* state, uint32_t tick_ms,
+                                RopeMetricsOutput* output)
+{
+  if ((state == NULL) || (output == NULL) || (state->running == 0U))
+  {
+    return;
+  }
+
+  state->last_sample_tick_ms = tick_ms;
+  state->event_active = 0U;
+  state->event_start_tick_ms = 0U;
+  state->event_peak_dynamic_g = 0.0f;
+  state->event_peak_rotation_rad_s = 0.0f;
+  RopeMetrics_Publish(state, tick_ms, output);
+}
+
 void RopeMetrics_Update(RopeMetricsState* state,
                         const RopeMetricsImuSample* sample,
                         RopeMetricsOutput* output)
 {
   float accel_norm;
   float dynamic_g;
-  float high_gyro_threshold;
+  float rotation_rad_s;
+  float high_rotation_threshold;
   float dynamic_threshold;
   uint32_t event_duration_ms;
 
@@ -161,34 +181,62 @@ void RopeMetrics_Update(RopeMetricsState* state,
     (dynamic_g - state->filtered_dynamic_g) * 0.32f;
 
   /*
-   * The six labelled watch sessions show one stable positive lobe per rope
-   * rotation on the watch Z gyro. Counting that signed lobe avoids the
-   * previous magnitude detector merging adjacent rotations into one event.
+   * Use the synthetic three-axis angular speed so the detector remains
+   * stable when the watch rotates on the wrist. Hysteresis and the minimum
+   * interval below keep the two sides of one rotation from being counted
+   * twice.
    */
-  state->filtered_gyro_z_rad_s +=
-    (sample->gyro_rad_s[2] - state->filtered_gyro_z_rad_s) * 0.55f;
+  rotation_rad_s =
+    sqrtf((sample->gyro_rad_s[0] * sample->gyro_rad_s[0]) +
+          (sample->gyro_rad_s[1] * sample->gyro_rad_s[1]) +
+          (sample->gyro_rad_s[2] * sample->gyro_rad_s[2]));
+  state->filtered_rotation_rad_s +=
+    (rotation_rad_s - state->filtered_rotation_rad_s) * 0.55f;
 
-  high_gyro_threshold = ROPE_HIGH_GYRO_Z_RAD_S;
-  dynamic_threshold = ROPE_MIN_DYNAMIC_G;
+  if ((state->event_active == 0U) &&
+      (state->filtered_rotation_rad_s < ROPE_LOW_ROTATION_RAD_S))
+  {
+    state->noise_rotation_rad_s +=
+      (state->filtered_rotation_rad_s - state->noise_rotation_rad_s) * 0.02f;
+  }
+  if ((state->event_active == 0U) &&
+      (state->filtered_dynamic_g < ROPE_MIN_DYNAMIC_G))
+  {
+    state->noise_dynamic_g +=
+      (state->filtered_dynamic_g - state->noise_dynamic_g) * 0.02f;
+  }
+
+  high_rotation_threshold =
+    (state->noise_rotation_rad_s * ROPE_NOISE_ROTATION_GAIN) +
+    ROPE_NOISE_ROTATION_MARGIN;
+  if (high_rotation_threshold < ROPE_BASE_HIGH_ROTATION_RAD_S)
+  {
+    high_rotation_threshold = ROPE_BASE_HIGH_ROTATION_RAD_S;
+  }
+  dynamic_threshold = state->noise_dynamic_g * ROPE_NOISE_DYNAMIC_GAIN;
+  if (dynamic_threshold < ROPE_MIN_DYNAMIC_G)
+  {
+    dynamic_threshold = ROPE_MIN_DYNAMIC_G;
+  }
 
   if (state->event_active == 0U)
   {
-    if (state->filtered_gyro_z_rad_s >= high_gyro_threshold)
+    if (state->filtered_rotation_rad_s >= high_rotation_threshold)
     {
       state->event_active = 1U;
       state->event_start_tick_ms = sample->tick_ms;
       state->event_peak_rotation_rad_s =
-        state->filtered_gyro_z_rad_s;
+        state->filtered_rotation_rad_s;
       state->event_peak_dynamic_g = state->filtered_dynamic_g;
     }
   }
   else
   {
-    if (state->filtered_gyro_z_rad_s >
+    if (state->filtered_rotation_rad_s >
         state->event_peak_rotation_rad_s)
     {
       state->event_peak_rotation_rad_s =
-        state->filtered_gyro_z_rad_s;
+        state->filtered_rotation_rad_s;
     }
     if (state->filtered_dynamic_g > state->event_peak_dynamic_g)
     {
@@ -196,13 +244,13 @@ void RopeMetrics_Update(RopeMetricsState* state,
     }
 
     event_duration_ms = sample->tick_ms - state->event_start_tick_ms;
-    if ((state->filtered_gyro_z_rad_s <= ROPE_LOW_GYRO_Z_RAD_S) ||
+    if ((state->filtered_rotation_rad_s <= ROPE_LOW_ROTATION_RAD_S) ||
         (event_duration_ms >= ROPE_EVENT_MAX_MS))
     {
       output->last_peak_gyro_x10 =
         RopeMetrics_ToU16(state->event_peak_rotation_rad_s * 10.0f);
       if ((state->event_peak_rotation_rad_s >=
-           high_gyro_threshold) &&
+           high_rotation_threshold) &&
           (state->event_peak_dynamic_g >= dynamic_threshold))
       {
         RopeMetrics_AcceptRotation(state, sample->tick_ms);
